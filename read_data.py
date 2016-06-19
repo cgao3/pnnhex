@@ -16,6 +16,7 @@ nEpoch = 0
 batch_states = np.ndarray(shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint8)
 batch_labels = np.ndarray(shape=(BATCH_SIZE,), dtype=np.uint8)
 
+
 def convert(raw_game):
     single_game = [-1]  # initially, empty board, so set first move as -1
     moves = raw_game.split()
@@ -25,24 +26,27 @@ def convert(raw_game):
         single_game.append(i * BOARD_SIZE + j)
     return single_game
 
+
 def read_raw_data(dataset_name):
     with open(dataset_name, "r") as infile:
         for line in infile:
             games.append(convert(line))
 
-def symmetry_move(int_move):
-    N = BOARD_SIZE * BOARD_SIZE
-    return N - 1 - int_move
 
-def rotate180(int_game):
-    g2 = []
-    for i in int_game:
-        if(i == -1):
-            g2.append(i)
-        else:
-            g2.append(symmetry_move(i))
-    return g2
-    
+def check_symmetry(intgame):
+    N=BOARD_SIZE**2
+    for i, intmove in enumerate(intgame):
+        sym_move=N-1-intmove
+        idx=-1
+        try:
+            idx=intgame.index(sym_move)
+        except ValueError:
+            return False
+        if idx % 2 != i % 2:
+            return False
+    return True
+
+
 def build_game_tobatch(kth, game_i, play_j):
     batch_states[kth, 1:INPUT_WIDTH-1, 1:INPUT_WIDTH-1, INPUT_DEPTH - 1] = 1
     if(games[game_i][play_j] == -1): 
@@ -53,11 +57,10 @@ def build_game_tobatch(kth, game_i, play_j):
         return
     # black plays first, the first channel for black
     turn = 0  # black is in 0-channel
-    g=[]
-    for j in xrange(1,play_j+1):
-        g.append(games[game_i][j])
-    g2=rotate180(g)
-    g=min(g,g2)
+    g= [games[game_i][j] for j in range(1,play_j+1,1)]
+
+    is_symmetry = check_symmetry(g)
+
     for move in g:
         x=move//BOARD_SIZE
         y=move%BOARD_SIZE
@@ -74,19 +77,25 @@ def build_game_tobatch(kth, game_i, play_j):
             batch_states[kth,INPUT_WIDTH-1,1:INPUT_WIDTH-1,1]=1
         turn = turn + 1
     
-    del g,g2    
-            
+    del g
+    return is_symmetry
+
+
 def prepare_batch(offset1, offset2):
     k = 0
     global nEpoch
     new_offset1 = -1
     new_offset2 = -1
+    batch_labels.fill(0)
+    batch_states.fill(0)
     while k < BATCH_SIZE:
         for i in xrange(offset1, len(games)):
             assert(len(games[i]) > 1)
             for j in xrange(offset2, len(games[i]) - 1):
-                build_game_tobatch(k, i, j)
-                batch_labels[k]=games[i][j + 1] #] = 1
+                symmetry_board = build_game_tobatch(k, i, j)
+                batch_labels[k]=games[i][j + 1]
+                if(symmetry_board):
+                    batch_labels[k]=min(batch_labels[k], BOARD_SIZE*BOARD_SIZE-1-batch_labels[k])
                 k = k + 1
                 if(k >= BATCH_SIZE):
                     new_offset1 = i

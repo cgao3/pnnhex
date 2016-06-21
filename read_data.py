@@ -3,6 +3,8 @@ from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
 
+from six.moves import xrange
+
 import numpy as np
 
 games = []
@@ -11,7 +13,6 @@ BOARD_SIZE = 13
 BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 3
-nEpoch = 0
 
 batch_states = np.ndarray(shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint8)
 batch_labels = np.ndarray(shape=(BATCH_SIZE,), dtype=np.uint8)
@@ -31,7 +32,6 @@ def read_raw_data(dataset_name):
     with open(dataset_name, "r") as infile:
         for line in infile:
             games.append(convert(line))
-
 
 def check_symmetry(intgame):
     N=BOARD_SIZE**2
@@ -67,8 +67,6 @@ def build_game_tobatch(kth, game_i, play_j):
         turn = turn % (INPUT_DEPTH - 1)
         batch_states[kth, x+1,y+1, turn]=1
         batch_states[kth, x+1,y+1, INPUT_DEPTH-1]=0
-        #batch_states[kth, ind // BOARD_SIZE, ind % BOARD_SIZE, turn] = 1
-        #batch_states[kth, ind // BOARD_SIZE, ind % BOARD_SIZE, INPUT_DEPTH - 1] = 0  # position occupied
         if(turn==0):
             batch_states[kth,0:INPUT_WIDTH,0,0]=1
             batch_states[kth,0:INPUT_WIDTH,INPUT_WIDTH-1,0]=1
@@ -83,11 +81,11 @@ def build_game_tobatch(kth, game_i, play_j):
 
 def prepare_batch(offset1, offset2):
     k = 0
-    global nEpoch
     new_offset1 = -1
     new_offset2 = -1
     batch_labels.fill(0)
     batch_states.fill(0)
+    next_epoch=False
     while k < BATCH_SIZE:
         for i in xrange(offset1, len(games)):
             assert(len(games[i]) > 1)
@@ -105,19 +103,22 @@ def prepare_batch(offset1, offset2):
             if(k >= BATCH_SIZE):
                     break
         if(k < BATCH_SIZE):
-            nEpoch += 1
+            next_epoch=True
             offset1 = 0
             offset2 = 0
-    return (new_offset1, new_offset2)
+    return (new_offset1, new_offset2, next_epoch)
 
 if __name__ == "__main__":
     read_raw_data("data/train_games.dat")
     offset1 = 0
     offset2 = 0
-    while(nEpoch <= 1):    
-        o1, o2 = prepare_batch(offset1, offset2)
+    nepoch=0
+    while(nepoch <= 1):
+        o1, o2, next_epoch= prepare_batch(offset1, offset2)
         offset1 = o1
         offset2 = o2
-        print(o1, o2)
+        print("epoch", nepoch, "offset: ", o1, o2)
+        if(next_epoch):
+            nepoch += 1
         
 # just a test

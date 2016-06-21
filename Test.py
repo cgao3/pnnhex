@@ -77,16 +77,18 @@ def main(argv=None):
         offset1, offset2 = 0, 0
         step=1
         training_step=10000
-        while(nEpoch < num_epochs):
-            off1, off2 = prepare_batch(offset1, offset2)
+        nepoch = 0
+        while(nepoch < num_epochs):
+            off1, off2, nextepoch = prepare_batch(offset1, offset2)
             x = batch_states.astype(np.float32)
             y = batch_labels.astype(np.int32)
             feed_diction = {train_data_node:x, 
                             train_labels_node:y}
             _, loss_v, predictions=sess.run([opt,loss, train_prediction], feed_dict=feed_diction)
-            print("epoch:", nEpoch, "loss: ", loss_v, "error rate:", error_rate(predictions, batch_labels))
+            print("epoch:", nepoch, "loss: ", loss_v, "error rate:", error_rate(predictions, batch_labels))
             offset1, offset2 = off1,off2
-            step = step + 1
+            if(nextepoch):
+                nepoch += 1
 
         tf.save(sess,FLAGS.check_point_dir+"/model.ckpt")
 

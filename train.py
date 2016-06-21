@@ -15,3 +15,15 @@ def calculus(func, a, b):
     return area
 
 print("area is:", calculus(f,6,9))
+
+tf.app.flags.DEFINE_boolean("mytest",False, "True unless indicated")
+FLAGS=tf.app.flags.FLAGS
+
+def main(argv=None):
+    if(FLAGS.mytest):
+        print("this is just a self test")
+    else:
+        print("nothing happens")
+
+if __name__ == "__main__":
+    tf.app.run()

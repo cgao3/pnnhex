@@ -7,59 +7,93 @@ import numpy as np
 
 from layer import Layer
 from read_data import *
+from six.moves import xrange
+
+tf.app.flags.DEFINE_boolean("training", True, "False if for evaluation")
+tf.app.flags.DEFINE_string("check_point_dir", "savedModel/", "path to save the model")
+tf.app.flags.DEFINE_string("train_data_dir", "data/", "path to training data")
+tf.app.flags.DEFINE_string("test_data_dir", "test/", "path to test data")
+FLAGS = tf.app.flags.FLAGS
+
+class SLNetwork(object):
+    '''
+    The first layer is input layer, using VALID padding, the rest use SAME padding
+    kernal default size 3x3
+    kernal depth 80 every layer
+    '''
+    def __init__(self, trainDataPath, testDataPath):
+        self.train_data_path=trainDataPath
+        self.test_data_path=testDataPath
+
+    def config(self, num_hidden_layer, kernal_size=(3,3), kernal_depth=80):
+        self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        self.train_labels_node = tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
+        self.input_layer = Layer("input_layer", paddingMethod="VALID")
+
+        self.conv_layer=[None]*num_hidden_layer
+        self.output=[None]*num_hidden_layer
+        weightShape0=kernal_size+(INPUT_DEPTH, kernal_depth)
+        self.output[0]=self.input_layer.convolve(self.train_data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
+        for i in range(num_hidden_layer):
+            self.conv_layer[i]=Layer("conv%d_layer"%i)
+
+        weightShape=kernal_size+(kernal_depth,kernal_depth)
+        for i in range(num_hidden_layer-1):
+            self.output[i+1]=self.conv_layer[i].convolve(self.output[i], weight_shape=weightShape, bias_shape=(kernal_depth,))
+
+        self.logits=self.conv_layer[num_hidden_layer-1].one_filter_out(self.output[num_hidden_layer-1], BOARD_SIZE)
+
+    #call config before train..
+    def train(self, num_epochs):
+        read_raw_data(self.train_data_path)
+        print("data loaded..")
+
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(self.logits, self.train_labels_node))
+        train_prediction = tf.nn.softmax(self.logits)
+        learning_rate_global_step=tf.Variable(0)
+        starting_rate=0.01
+        train_step=100000 # learning rate *0.95 every train_step feed
+        learning_rate = tf.train.exponential_decay(starting_rate, learning_rate_global_step * BATCH_SIZE, train_step, 0.9, staircase=True)
+
+        opt = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=learning_rate_global_step)
+        saver = tf.train.Saver()
+
+        with tf.Session() as sess:
+            init=tf.initialize_all_variables()
+            sess.run(init)
+            print("Initialized!")
+            offset1, offset2 = 0, 0
+            nepoch = 0
+            step=0
+            print_frquence=10
+            while (nepoch < num_epochs):
+                off1, off2, nextepoch = prepare_batch(offset1, offset2)
+                x = batch_states.astype(np.float32)
+                y = batch_labels.astype(np.int32)
+                feed_diction = {self.train_data_node: x,
+                                self.train_labels_node: y}
+                _, loss_value, predictions = sess.run([opt, loss, train_prediction], feed_dict=feed_diction)
+                offset1, offset2 = off1, off2
+                if (nextepoch):
+                    nepoch += 1
+                if step % print_frquence == 0:
+                    print("epoch:", nepoch, "loss: ", loss_value, "error rate:", error_rate(predictions, batch_labels))
+                step += 1
+
+            saver.save(sess, FLAGS.check_point_dir + "/model.ckpt")
 
 
-input_layer = Layer("input_layer")
+def error_rate(predictions, labels):
+    return 100.0 - 100.0 * np.sum(np.argmax(predictions, 1) == labels) / predictions.shape[0]
 
-input_tensor = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, BOARD_SIZE, BOARD_SIZE, INPUT_CHANNEL_DEPTH), name="input_board_state")
-input_labels = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, BOARD_SIZE * BOARD_SIZE))  # one-hot
 
-output1 = input_layer.convolve(input_tensor, (3, 3, 3, 80), (80))
+def main(argv=None):
+    supervisedlearn=SLNetwork("data/train_games.dat","test_games.dat")
+    supervisedlearn.config(num_hidden_layer=8, kernal_size=(3,3), kernal_depth=80)
 
-conv1 = Layer("conv1_layer")
-out_conv1 = conv1.convolve(output1, weight_shape=(3, 3, 80, 80), bias_shape=(80))
+    num_epochs=40
+    supervisedlearn.train(num_epochs)
 
-conv2 = Layer("conv2_layer")
-out_conv2 = conv2.convolve(out_conv1, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-
-conv3 = Layer("conv3_layer")
-out_conv3 = conv3.convolve(out_conv2, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-
-conv4 = Layer("conv4_layer")
-out_conv4 = conv4.convolve(out_conv3, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-
-conv5 = Layer("conv5_layer")
-out_conv5 = conv5.convolve(out_conv4, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-
-conv6 = Layer("conv6_layer")
-out_conv6 = conv6.convolve(out_conv5, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-
-conv7 = Layer("conv7_layer")
-out_conv7 = conv7.convolve(out_conv6, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-
-conv8 = Layer("conv8_layer")
-logits = conv8.one_filter_out(out_conv7, BOARD_SIZE)
-print("logits", logits)
-loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits, input_labels))
-
-learning_rate = 0.01
-
-opt = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
-
-with tf.Session() as sess:
-    sess.run(tf.initialize_all_variables())
-    print("Initialized!")
-    print("loss looks ", loss)
-    read_raw_data("data/train_games.dat")
-    offset1, offset2 = 0, 0
-    while(nEpoch < 1):
-        off1, off2 = prepare_batch(offset1, offset2)
-        x = batch_states.astype(np.float32)
-        y = batch_labels.astype(np.float32)
-        feed_diction = {input_tensor:x, input_labels:y}
-        x = sess.run(opt, feed_dict=feed_diction)
-        print("x ", x)
-        print("loss", sess.run(loss))
-        offset1, offset2 = off1, off2
-        
+if __name__ == "__main__":
+    tf.app.run()
 

@@ -3,6 +3,7 @@ from __future__ import print_function
 from __future__ import division
 
 import tensorflow as tf
+import time
 import numpy as np
 
 from layer import Layer
@@ -25,33 +26,49 @@ class SLNetwork(object):
         self.train_data_path=trainDataPath
         self.test_data_path=testDataPath
 
-    def config(self, num_hidden_layer, kernal_size=(3,3), kernal_depth=80):
+    def declare_variables(self, num_hidden_layer):
+        self.num_hidden_layer=num_hidden_layer
         self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         self.train_labels_node = tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
+
+        self.eval_data_node=tf.placeholder(tf.float32, shape=(EVAL_BATCH_SIZE,INPUT_WIDTH,INPUT_WIDTH, INPUT_DEPTH))
+        self.eval_label_node=tf.placeholder(tf.int32, shape=(EVAL_BATCH_SIZE,))
+
         self.input_layer = Layer("input_layer", paddingMethod="VALID")
 
         self.conv_layer=[None]*num_hidden_layer
-        self.output=[None]*num_hidden_layer
-        weightShape0=kernal_size+(INPUT_DEPTH, kernal_depth)
-        self.output[0]=self.input_layer.convolve(self.train_data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
         for i in range(num_hidden_layer):
-            self.conv_layer[i]=Layer("conv%d_layer"%i)
+            self.conv_layer[i] = Layer("conv%d_layer" % i)
+
+    def model(self, data_node, kernal_size=(3,3), kernal_depth=80):
+
+        output = [None] * self.num_hidden_layer
+        weightShape0=kernal_size+(INPUT_DEPTH, kernal_depth)
+        output[0]=self.input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
 
         weightShape=kernal_size+(kernal_depth,kernal_depth)
-        for i in range(num_hidden_layer-1):
-            self.output[i+1]=self.conv_layer[i].convolve(self.output[i], weight_shape=weightShape, bias_shape=(kernal_depth,))
+        for i in range(self.num_hidden_layer-1):
+            output[i+1]=self.conv_layer[i].convolve(output[i], weight_shape=weightShape, bias_shape=(kernal_depth,))
 
-        self.logits=self.conv_layer[num_hidden_layer-1].one_filter_out(self.output[num_hidden_layer-1], BOARD_SIZE)
+        logits=self.conv_layer[self.num_hidden_layer-1].one_filter_out(output[self.num_hidden_layer-1], BOARD_SIZE)
+
+        return logits
 
     #call config before train..
     def train(self, num_epochs):
-        read_raw_data(self.train_data_path)
-        print("data loaded..")
 
-        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(self.logits, self.train_labels_node))
-        train_prediction = tf.nn.softmax(self.logits)
+        train_data_util=data_util(self.train_data_path, train_data=True)
+        test_data_util=data_util(self.test_data_path,train_data=False)
+        print("train and test data loaded..")
+        self.declare_variables(num_hidden_layer=8)
+        logits=self.model(self.train_data_node)
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, self.train_labels_node))
+        train_prediction = tf.nn.softmax(logits)
+        tf.get_variable_scope().reuse_variables()
+        eval_prediction=tf.nn.softmax(self.model(self.eval_data_node))
+
         learning_rate_global_step=tf.Variable(0)
-        starting_rate=0.01
+        starting_rate=0.1/BATCH_SIZE
         train_step=100000 # learning rate *0.95 every train_step feed
         learning_rate = tf.train.exponential_decay(starting_rate, learning_rate_global_step * BATCH_SIZE, train_step, 0.9, staircase=True)
 
@@ -66,10 +83,11 @@ class SLNetwork(object):
             nepoch = 0
             step=0
             print_frquence=10
+            test_frequence=100
             while (nepoch < num_epochs):
-                off1, off2, nextepoch = prepare_batch(offset1, offset2)
-                x = batch_states.astype(np.float32)
-                y = batch_labels.astype(np.int32)
+                off1, off2, nextepoch = train_data_util.prepare_batch(offset1, offset2)
+                x = train_data_util.batch_states.astype(np.float32)
+                y = train_data_util.batch_labels.astype(np.int32)
                 feed_diction = {self.train_data_node: x,
                                 self.train_labels_node: y}
                 _, loss_value, predictions = sess.run([opt, loss, train_prediction], feed_dict=feed_diction)
@@ -77,7 +95,14 @@ class SLNetwork(object):
                 if (nextepoch):
                     nepoch += 1
                 if step % print_frquence == 0:
-                    print("epoch:", nepoch, "loss: ", loss_value, "error rate:", error_rate(predictions, batch_labels))
+                    print("epoch:", nepoch, "loss: ", loss_value, "error rate:", error_rate(predictions, train_data_util.batch_labels))
+                if step % test_frequence == 0:
+                    test_data_util.prepare_batch(0,0)
+                    x=test_data_util.batch_states.astype(np.float32)
+                    y=test_data_util.batch_labels.astype(np.int32)
+                    feed_d={self.eval_data_node:x, self.eval_label_node:y}
+                    predict=sess.run(eval_prediction, feed_dict=feed_d)
+                    print("evaluation error rate", error_rate(predict, test_data_util.batch_labels))
                 step += 1
 
             saver.save(sess, FLAGS.check_point_dir + "/model.ckpt")
@@ -88,9 +113,7 @@ def error_rate(predictions, labels):
 
 
 def main(argv=None):
-    supervisedlearn=SLNetwork("data/train_games.dat","test_games.dat")
-    supervisedlearn.config(num_hidden_layer=8, kernal_size=(3,3), kernal_depth=80)
-
+    supervisedlearn=SLNetwork("data/train_games.dat","data/test_games.dat")
     num_epochs=40
     supervisedlearn.train(num_epochs)
 

@@ -7,17 +7,12 @@ from six.moves import xrange
 
 import numpy as np
 
-games = []
-
-BOARD_SIZE = 13
+BOARD_SIZE = 7
 BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 3
 
 EVAL_BATCH_SIZE=100
-
-batch_states = np.ndarray(shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint8)
-batch_labels = np.ndarray(shape=(BATCH_SIZE,), dtype=np.uint8)
 
 class data_util(object):
 

@@ -26,7 +26,7 @@ class SLNetwork(object):
         self.train_data_path=trainDataPath
         self.test_data_path=testDataPath
 
-    def declare_variables(self, num_hidden_layer):
+    def declare_layers(self, num_hidden_layer):
         self.num_hidden_layer=num_hidden_layer
         self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         self.train_labels_node = tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
@@ -60,7 +60,7 @@ class SLNetwork(object):
         train_data_util=data_util(self.train_data_path, train_data=True)
         test_data_util=data_util(self.test_data_path,train_data=False)
         print("train and test data loaded..")
-        self.declare_variables(num_hidden_layer=8)
+        self.declare_layers(num_hidden_layer=8)
         logits=self.model(self.train_data_node)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, self.train_labels_node))
         train_prediction = tf.nn.softmax(logits)
@@ -71,8 +71,8 @@ class SLNetwork(object):
         starting_rate=0.1/BATCH_SIZE
         train_step=100000 # learning rate *0.95 every train_step feed
         learning_rate = tf.train.exponential_decay(starting_rate, learning_rate_global_step * BATCH_SIZE, train_step, 0.9, staircase=True)
-
-        opt = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=learning_rate_global_step)
+        #opt = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=learning_rate_global_step)
+        opt2=tf.train.AdamOptimizer().minimize(loss)
         saver = tf.train.Saver()
 
         with tf.Session() as sess:
@@ -90,7 +90,7 @@ class SLNetwork(object):
                 y = train_data_util.batch_labels.astype(np.int32)
                 feed_diction = {self.train_data_node: x,
                                 self.train_labels_node: y}
-                _, loss_value, predictions = sess.run([opt, loss, train_prediction], feed_dict=feed_diction)
+                _, loss_value, predictions = sess.run([opt2, loss, train_prediction], feed_dict=feed_diction)
                 offset1, offset2 = off1, off2
                 if (nextepoch):
                     nepoch += 1
@@ -105,7 +105,7 @@ class SLNetwork(object):
                     print("evaluation error rate", error_rate(predict, test_data_util.batch_labels))
                 step += 1
 
-            saver.save(sess, FLAGS.check_point_dir + "/model.ckpt")
+            saver.save(sess, FLAGS.check_point_dir + "model.ckpt")
 
 
 def error_rate(predictions, labels):
@@ -113,8 +113,8 @@ def error_rate(predictions, labels):
 
 
 def main(argv=None):
-    supervisedlearn=SLNetwork("data/train_games.dat","data/test_games.dat")
-    num_epochs=40
+    supervisedlearn=SLNetwork("data/7x7rawgames.dat","data/test7x7.dat")
+    num_epochs=4000
     supervisedlearn.train(num_epochs)
 
 if __name__ == "__main__":

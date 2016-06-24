@@ -1,29 +1,21 @@
 import tensorflow as tf
 
-def f(x):
-    return x**2
 
-def calculus(func, a, b):
-    epsilon=0.001
-    width=abs(a-b)
-    seg=width/epsilon
-    area=0.0
-    for i in range(int(seg)):
-        subarea=epsilon*(f(a)+f(b))/2
-        area += subarea
+v1=tf.Variable(23.0)
+v2=tf.Variable(2.0)
 
-    return area
+v3=tf.div(v1,v2)
+v4=tf.mul(v1,v2)
 
-print("area is:", calculus(f,6,9))
+init=tf.initialize_all_variables()
 
-tf.app.flags.DEFINE_boolean("mytest",False, "True unless indicated")
-FLAGS=tf.app.flags.FLAGS
+sess1=tf.Session()
+sess1.run(init)
+print(sess1.run(v3))
 
-def main(argv=None):
-    if(FLAGS.mytest):
-        print("this is just a self test")
-    else:
-        print("nothing happens")
+sess2=tf.Session()
+sess2.run(init)
+print(sess2.run(v4))
+sess1.close()
 
-if __name__ == "__main__":
-    tf.app.run()
+sess2.close()

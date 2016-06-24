@@ -4,95 +4,83 @@ from __future__ import print_function
 from __future__ import division
 
 import tensorflow as tf
+
 import numpy as np
+import matplotlib.pyplot as plt
 
-from layer import Layer
-from read_data import *
+N=100
+D=2
+K=3
 
-num_epochs=10
-train_step=10
+X=np.zeros(shape=(N*K,D), dtype=np.float32)
+y=np.zeros(shape=(N*K,), dtype=np.int32)
 
-tf.app.flags.DEFINE_boolean("training", True, "False if for evaluation")
-tf.app.flags.DEFINE_string("check_point_dir","savedModel/", "path to save the model")
-tf.app.flags.DEFINE_string("train_data_dir","data/","path to training data")
-tf.app.flags.DEFINE_string("test_data_dir", "test/","path to test data")
-FLAGS=tf.app.flags.FLAGS
+for j in xrange(K):
+    ix=range(N*j, N*(j+1))
+    r=np.linspace(0.0,1,N)
+    t=np.linspace(j*4,(j+1)*4,N)+np.random.randn(N)*0.2
+    X[ix]=np.c_[r*np.sin(t), r*np.cos(t)]
+    y[ix]=j
 
-def error_rate(predictions, labels):
-    return 100.0- 100.0 * np.sum(np.argmax(predictions, 1) == labels)/predictions.shape[0]
+plt.scatter(X[:,0],X[:,1], c=y,s=40,cmap=plt.cm.Spectral)
 
-def main(argv=None):
+W=tf.get_variable("Weight",shape=(D,K), initializer=tf.truncated_normal_initializer(stddev=0.1))
+b=tf.get_variable("bias", shape=(K,), initializer=tf.constant_initializer(0.0))
 
-    train_data_node=tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-    train_labels_node=tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
-    
-    input_layer = Layer("input_layer", paddingMethod="VALID")
-    
-    output1 = input_layer.convolve(train_data_node, (3, 3, 3, 80), (80))
-    
-    conv1 = Layer("conv1_layer")
-    out_conv1 = conv1.convolve(output1, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-    
-    conv2 = Layer("conv2_layer")
-    out_conv2 = conv2.convolve(out_conv1, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-    
-    conv3 = Layer("conv3_layer")
-    out_conv3 = conv3.convolve(out_conv2, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-    
-    conv4 = Layer("conv4_layer")
-    out_conv4 = conv4.convolve(out_conv3, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-    
-    conv5 = Layer("conv5_layer")
-    out_conv5 = conv5.convolve(out_conv4, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-    
-    conv6 = Layer("conv6_layer")
-    out_conv6 = conv6.convolve(out_conv5, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-    
-    conv7 = Layer("conv7_layer")
-    out_conv7 = conv7.convolve(out_conv6, weight_shape=(3, 3, 80, 80), bias_shape=(80))
-    
-    conv8 = Layer("conv8_layer")
-    logits = conv8.one_filter_out(out_conv7, BOARD_SIZE)
-    print("logits", logits)
-    loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, train_labels_node))
+data_x=tf.placeholder(dtype=tf.float32, shape=(N*K,D))
+data_y=tf.placeholder(dtype=tf.int32, shape=(N*K, ))
 
-    train_prediction=tf.nn.softmax(logits)
+one_x = tf.placeholder(dtype=tf.float32, shape=(1,D))
+one_y = tf.placeholder(dtype=tf.int32, shape=(1,))
 
-    batch=tf.Variable(0)
-    learning_rate=tf.train.exponential_decay(0.01,batch*BATCH_SIZE, train_step, 0.95,staircase=True)
-    
-    opt = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss)
-    saver=tf.train.Saver()
+logit=tf.matmul(data_x, W)+b
 
-    with tf.Session() as sess:
-        tf.initialize_all_variables().run()
-        print("Initialized!")
-        if not tf.app.flags.FLAGS.training:
-            ckpt = tf.train.get_checkpoint_state(FLAGS.check_point_dir)
-            if ckpt and ckpt.model_checkpoint_dir_path:
-                print("restoring a model")
-                saver.restore(sess,ckpt.model_checkpoint_dir_path)
+logit2=tf.matmul(one_x, W)+b
 
-        read_raw_data("data/train_games.dat")
-        offset1, offset2 = 0, 0
-        step=1
-        training_step=10000
-        nepoch = 0
-        while(nepoch < num_epochs):
-            off1, off2, nextepoch = prepare_batch(offset1, offset2)
-            x = batch_states.astype(np.float32)
-            y = batch_labels.astype(np.int32)
-            feed_diction = {train_data_node:x, 
-                            train_labels_node:y}
-            _, loss_v, predictions=sess.run([opt,loss, train_prediction], feed_dict=feed_diction)
-            print("epoch:", nepoch, "loss: ", loss_v, "error rate:", error_rate(predictions, batch_labels))
-            offset1, offset2 = off1,off2
-            if(nextepoch):
-                nepoch += 1
+R=tf.placeholder(dtype=tf.float32)
 
-        tf.save(sess,FLAGS.check_point_dir+"/model.ckpt")
+loss=tf.mul(R,tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logit,data_y)))
 
-            
-if __name__ == "__main__":
-    tf.app.run()
+label=tf.argmax(tf.nn.softmax(logit2),1)
+loss2=tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logit2, label[0:1]))
+
+opt=tf.train.GradientDescentOptimizer(0.01).minimize(loss)
+opt2=tf.train.GradientDescentOptimizer(0.01)
+grds_and_vars=opt2.compute_gradients(loss2)
+
+grads=[grad for grad, _ in grds_and_vars]
+
+grads_op=opt2.apply_gradients(grds_and_vars)
+
+pred=tf.argmax(tf.nn.softmax(logit), 1)
+correct_prediction = tf.equal(y, tf.cast(pred,tf.int32))
+accuracy= tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+
+init=tf.initialize_all_variables()
+
+sess=tf.Session()
+tf.set_random_seed(10)
+sess.run(init)
+_ =sess.run([opt], feed_dict={R:0.3, data_x:X, data_y:y})
+accu=sess.run(accuracy, feed_dict={data_x:X})
+print("accuracy:", accu)
+sess.close()
+
+with tf.Session() as sess2:
+    sess2.run(init)
+    s=0.0
+    for i in range(N*K):
+        #sess2.run(opt2, feed_dict={one_x:X[i:i+1], one_y:y[i:i+1]})
+        #sess2.run(grads_op, feed_dict={one_x:X[i:i+1], one_y:y[i:i+1]})
+        sess2.run(grads_op, feed_dict={one_x:X[i:i+1]})
+
+    bgrads=[]
+    for i in range(N*K):
+        pred2 = tf.argmax(tf.nn.softmax(logit2), 1)
+        correct_pred=tf.equal(y[i:i+1], tf.cast(pred2, tf.int32))
+        accu=tf.reduce_mean(tf.cast(correct_pred, tf.float32))
+        acy=sess2.run(accu, feed_dict={one_x:X[i:i+1], one_y:y[i:i+1]})
+        s += acy
+        #print("accuracy is :", acy)
+    print("overall accuracy: ", s/(N*K))
 

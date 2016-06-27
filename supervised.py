@@ -57,9 +57,12 @@ class SLNetwork(object):
     #call config before train..
     def train(self, num_epochs):
 
-        train_data_util=data_util(self.train_data_path, train_data=True)
-        test_data_util=data_util(self.test_data_path,train_data=False)
+        train_data_util=data_util()
+        train_data_util.load_offline_data(self.train_data_path, train_data=True)
+        test_data_util=data_util()
+        test_data_util.load_offline_data(self.test_data_path,train_data=False)
         print("train and test data loaded..")
+
         self.declare_layers(num_hidden_layer=8)
         logits=self.model(self.train_data_node)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, self.train_labels_node))
@@ -114,7 +117,7 @@ def error_rate(predictions, labels):
 
 def main(argv=None):
     supervisedlearn=SLNetwork("data/7x7rawgames.dat","data/test7x7.dat")
-    num_epochs=4000
+    num_epochs=20
     supervisedlearn.train(num_epochs)
 
 if __name__ == "__main__":

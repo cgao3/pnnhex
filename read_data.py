@@ -16,14 +16,18 @@ EVAL_BATCH_SIZE=100
 
 class data_util(object):
 
-    def __init__(self, dataset_location, train_data=True):
+    def __init__(self):
         self.games=[]
-        self.dataset=dataset_location
-        batchsize=BATCH_SIZE if train_data else EVAL_BATCH_SIZE
+        self.batchsize=None
+        self.batch_states=None
+        self.batch_states=None
+
+    def load_offline_data(self, dataset_location, train_data=True):
+        self.dataset = dataset_location
+        batchsize = BATCH_SIZE if train_data else EVAL_BATCH_SIZE
         self.batch_states = np.ndarray(shape=(batchsize, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint8)
         self.batch_labels = np.ndarray(shape=(batchsize,), dtype=np.uint8)
-        self.batchsize=batchsize
-
+        self.batchsize = batchsize
         self.read_raw_data()
 
     def convert(self, raw_game):
@@ -34,7 +38,6 @@ class data_util(object):
             j = int("".join(raw_move[1:])) - 1
             single_game.append(i * BOARD_SIZE + j)
         return single_game
-
 
     def read_raw_data(self):
         with open(self.dataset, "r") as infile:
@@ -53,7 +56,6 @@ class data_util(object):
             if idx % 2 != i % 2:
                 return False
         return True
-
 
     def build_game_tobatch(self, kth, game_i, play_j):
         self.batch_states[kth, 1:INPUT_WIDTH-1, 1:INPUT_WIDTH-1, INPUT_DEPTH - 1] = 1
@@ -116,7 +118,8 @@ class data_util(object):
         return (new_offset1, new_offset2, next_epoch)
 
 if __name__ == "__main__":
-    datatest=data_util("data/train_games.dat", train_data=True)
+    datatest=data_util()
+    datatest.load_offline_data("data/train_games.dat", train_data=True)
     offset1 = 0
     offset2 = 0
     nepoch=0

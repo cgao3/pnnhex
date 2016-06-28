@@ -54,7 +54,7 @@ class PGNetwork(object):
     def softmax_selection(self, logits, currentstate):
         empty_positions=[i for i in range(BOARD_SIZE**2) if i not in currentstate]
         logits=np.squeeze(logits)
-        #print(empty_positions)
+        #print("empty positions:", empty_positions)
         #print(logits)
         effective_logits=[logits[i] for i in empty_positions]
         max_value=np.max(effective_logits)
@@ -95,13 +95,57 @@ class PGNetwork(object):
         data=data_util()
         data.batch_states=batch_states
         data.batch_labels=batch_label
-        data.batchsize=len(batch_label)-1
-        data.games=g
+        data.batchsize=len(batch_label)
+        data.games=[g]
         o1,o2, next_batch=data.prepare_batch(0,0)
         print("offset ",o1,o2,"next batch", next_batch)
+    def select_model(self, models_location_dir):
+        #list all models, randomly select one
+
+        return "savedModel/model.ckpt"
+    def play_one_batch_games(self, sess, otherSess, thisLogit, otherLogit, data_node, batch_game_size):
+        this_player = 0
+        other_player = 1
+        grad_vals_list = []
+        grad_placeholder_list = []
+        apply_grad_placeholder_list = []
+        this_win_count=0
+        other_win_count=0
+        Rewards=[]
+        games=[]
+        for one_game in range(batch_game_size):
+            moves = []
+            input_tensor = self.init_tensor()
+            currentplayer = this_player
+            gamestatus = -1
+            black_group = unionfind()
+            white_group = unionfind()
+            count = 0
+            while (gamestatus == -1):
+                if (currentplayer == this_player):
+                    logit = sess.run(thisLogit, feed_dict={data_node: input_tensor.astype(np.float32)})
+                else:
+                    logit = otherSess.run(otherLogit, feed_dict={data_node: input_tensor.astype(np.float32)})
+                action = self.softmax_selection(logit, moves)
+                moves.append(action)
+                input_tensor = self.update_tensor(input_tensor, currentplayer, action)
+                black_group, white_group = \
+                    self.update_unionfind(action, currentplayer, moves, black_group, white_group)
+                currentplayer = other_player if currentplayer == this_player else this_player
+                gamestatus = self.winner(black_group, white_group)
+                count += 1
+                #print(count, "action ", action)
+            if(gamestatus==this_player): this_win_count += 1
+            else: other_win_count += 1
+            R = 1.0 if gamestatus == this_player else -1.0
+            Rewards.append(R)
+            games.append([-1]+moves)
+        print("this player win: ", this_win_count, "other player win: ", other_win_count)
+        return (games, Rewards)
 
     def selfplay(self):
         data=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        label_node=tf.placeholder(dtype=tf.int32, shape=(1,))
         otherNeuroPlayer = PGNetwork("other_player")
         otherSess = tf.Session()
         otherLogit=otherNeuroPlayer.model(data)
@@ -110,44 +154,26 @@ class PGNetwork(object):
 
         sess=tf.Session()
         thisLogit=self.model(data)
-        sess.run(tf.initialize_all_variables())
-        this_player=0
-        other_player=1
-        for _batch in range(1):
-            state=[]
-            input_tensor=self.init_tensor()
-            currentplayer=this_player
-            gamestatus=-1
-            black_group = unionfind()
-            white_group = unionfind()
-            tensors=[]
-            count=0
-            while (gamestatus==-1):
-                tensors.append(input_tensor)
-                if(currentplayer==this_player):
-                    logit = sess.run(thisLogit, feed_dict={data:input_tensor.astype(np.float32)})
-                else:
-                    logit=otherSess.run(otherLogit, feed_dict={data:input_tensor.astype(np.float32)})
-                action=self.softmax_selection(logit,state)
-                state.append(action)
-                input_tensor=self.update_tensor(input_tensor, currentplayer, action)
-                black_group,white_group=\
-                    self.update_unionfind(action, currentplayer, state, black_group, white_group)
-                currentplayer = other_player if currentplayer==this_player else this_player
-                gamestatus=self.winner(black_group,white_group)
-                count +=1
-                print(count, "action ", action)
-            R=1.0 if gamestatus==this_player else -1.0
-            batchsize=len(state)
-            print(state_to_str(state))
-            batch_tensors=np.ndarray(shape=(batchsize, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.float32)
-            batch_label=np.ndarray(shape=(batchsize,), dtype=np.int32)
-            logit=self.model(batch_tensors)
-            self.build_batch_from_game(batch_tensors,batch_label, [state])
-            loss=tf.mul(tf.Variable(-R), tf.reduce_sum(tf.nn.sparse_softmax_cross_entropy_with_logits(logit,batch_label)))
-            #opt=tf.train.AdamOptimizer()
-            #opt_op=opt.minimize(loss)
-            #sess.run(opt_op)
+        saver.restore(sess,"savedModel/model.ckpt")
+        batch_game_size=5
+        opt = tf.train.GradientDescentOptimizer(0.001/batch_game_size)
+        #sess.run(tf.initialize_all_variables())
+        logit=self.model(data)
+        R_node=tf.placeholder(dtype=tf.float32)
+        loss=tf.mul(R_node, tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logit, label_node)))
+        for _ in range(30):
+            games, rewards=self.play_one_batch_games(sess,otherSess, thisLogit,otherLogit,data,batch_game_size)
+            for i in range(batch_game_size):
+                R=rewards[i]
+                game=games[i]
+                game_length=len(game)-1
+                batch_data = np.ndarray(dtype=np.float32, shape=(game_length, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+                batch_label=np.ndarray(dtype=np.int32, shape=(game_length,))
+                self.build_batch_from_game(batch_data, batch_label, game)
+                sign=-1
+                for j in range(game_length):
+                    sess.run(opt.minimize(loss), feed_dict={R_node:R*sign, data: batch_data[j:j+1],label_node:batch_label[j:j+1]})
+                    sign=sign*(-1)
 
         otherSess.close()
         sess.close()

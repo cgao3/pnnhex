@@ -76,10 +76,10 @@ class data_util(object):
         for move in g:
             x=move//BOARD_SIZE
             y=move%BOARD_SIZE
-            turn = turn % (INPUT_DEPTH - 1)
             self.batch_states[kth, x+1,y+1, turn]=1
             self.batch_states[kth, x+1,y+1, INPUT_DEPTH-1]=0
             turn = turn + 1
+            turn = turn % (INPUT_DEPTH - 1)
 
         del g
         return is_symmetry

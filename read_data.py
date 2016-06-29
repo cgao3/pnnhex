@@ -57,12 +57,15 @@ class data_util(object):
         return True
 
     def build_game_tobatch(self, kth, game_i, play_j):
+        #empty positions
         self.batch_states[kth, 1:INPUT_WIDTH-1, 1:INPUT_WIDTH-1, INPUT_DEPTH - 1] = 1
+        #black occupied
+        self.batch_states[kth, 0:INPUT_WIDTH, 0, 0] = 1
+        self.batch_states[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
+        #white occupied
+        self.batch_states[kth, 0, 1:INPUT_WIDTH - 1, 1] = 1
+        self.batch_states[kth, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
         if(self.games[game_i][play_j] == -1):
-            self.batch_states[kth,0:INPUT_WIDTH,0,0]=1
-            self.batch_states[kth,0:INPUT_WIDTH,INPUT_WIDTH-1,0]=1
-            self.batch_states[kth,0,1:INPUT_WIDTH-1,1]=1
-            self.batch_states[kth,INPUT_WIDTH-1,1:INPUT_WIDTH-1,1]=1
             return
         # black plays first, the first channel for black
         turn = 0  # black is in 0-channel

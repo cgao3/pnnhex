@@ -117,7 +117,7 @@ def error_rate(predictions, labels):
 
 def main(argv=None):
     supervisedlearn=SLNetwork("data/7x7rawgames.dat","data/test7x7.dat")
-    num_epochs=20
+    num_epochs=60
     supervisedlearn.train(num_epochs)
 
 if __name__ == "__main__":

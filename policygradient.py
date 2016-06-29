@@ -3,11 +3,13 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from read_data import BOARD_SIZE, INPUT_WIDTH, INPUT_DEPTH
+from read_data import BOARD_SIZE, INPUT_WIDTH, INPUT_DEPTH, data_util
 import numpy as np
 from unionfind import unionfind
 import tensorflow as tf
 import time
+
+from six.moves import xrange
 
 from layer import *
 from game_util import *
@@ -86,19 +88,9 @@ class PGNetwork(object):
         t[0, 0, 1:INPUT_WIDTH - 1, 1] = 1
         t[0, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
 
-        t[0, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 2] = 1
+        t[0, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH-1] = 1
         return t
 
-    #build batch from a single game
-    def build_batch_from_game(self, batch_states, batch_label, g):
-        from read_data import data_util
-        data=data_util()
-        data.batch_states=batch_states
-        data.batch_labels=batch_label
-        data.batchsize=len(batch_label)
-        data.games=[g]
-        o1,o2, next_batch=data.prepare_batch(0,0)
-        print("offset ",o1,o2,"next batch", next_batch)
     def select_model(self, models_location_dir):
         #list all models, randomly select one
 
@@ -106,9 +98,6 @@ class PGNetwork(object):
     def play_one_batch_games(self, sess, otherSess, thisLogit, otherLogit, data_node, batch_game_size):
         this_player = 0
         other_player = 1
-        grad_vals_list = []
-        grad_placeholder_list = []
-        apply_grad_placeholder_list = []
         this_win_count=0
         other_win_count=0
         Rewards=[]
@@ -129,14 +118,14 @@ class PGNetwork(object):
                 action = self.softmax_selection(logit, moves)
                 moves.append(action)
                 input_tensor = self.update_tensor(input_tensor, currentplayer, action)
-                black_group, white_group = \
-                    self.update_unionfind(action, currentplayer, moves, black_group, white_group)
+                black_group, white_group = self.update_unionfind(action, currentplayer, moves, black_group, white_group)
                 currentplayer = other_player if currentplayer == this_player else this_player
                 gamestatus = self.winner(black_group, white_group)
                 count += 1
                 #print(count, "action ", action)
             if(gamestatus==this_player): this_win_count += 1
             else: other_win_count += 1
+            print("steps ", count, "gamestatus ", gamestatus)
             R = 1.0 if gamestatus == this_player else -1.0
             Rewards.append(R)
             games.append([-1]+moves)
@@ -145,7 +134,6 @@ class PGNetwork(object):
 
     def selfplay(self):
         data=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        label_node=tf.placeholder(dtype=tf.int32, shape=(1,))
         otherNeuroPlayer = PGNetwork("other_player")
         otherSess = tf.Session()
         otherLogit=otherNeuroPlayer.model(data)
@@ -157,26 +145,52 @@ class PGNetwork(object):
         saver.restore(sess,"savedModel/model.ckpt")
         batch_game_size=5
         opt = tf.train.GradientDescentOptimizer(0.001/batch_game_size)
+
         #sess.run(tf.initialize_all_variables())
-        logit=self.model(data)
-        R_node=tf.placeholder(dtype=tf.float32)
-        loss=tf.mul(R_node, tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logit, label_node)))
         for _ in range(30):
             games, rewards=self.play_one_batch_games(sess,otherSess, thisLogit,otherLogit,data,batch_game_size)
+
             for i in range(batch_game_size):
                 R=rewards[i]
                 game=games[i]
                 game_length=len(game)-1
-                batch_data = np.ndarray(dtype=np.float32, shape=(game_length, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-                batch_label=np.ndarray(dtype=np.int32, shape=(game_length,))
-                self.build_batch_from_game(batch_data, batch_label, game)
                 sign=-1
+                R_var=np.ndarray(dtype=np.float32, shape=(game_length,))
+                batch_data=np.zeros(dtype=np.float32, shape=(game_length, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+                label=np.ndarray(shape=(game_length,), dtype=np.int32)
                 for j in range(game_length):
-                    sess.run(opt.minimize(loss), feed_dict={R_node:R*sign, data: batch_data[j:j+1],label_node:batch_label[j:j+1]})
-                    sign=sign*(-1)
+                    self.build_tensor(game,j,batch_data, j)
+                    R_var[j]=R*sign
+                    sign=-sign
+                    label[j]=game[j+1]
+                logit=self.model(batch_data)
+                loss1=tf.nn.sparse_softmax_cross_entropy_with_logits(logit,label)
+                loss=tf.reduce_mean(tf.mul(R_var, loss1))
+                sess.run(opt.minimize(loss))
 
         otherSess.close()
         sess.close()
+
+    def build_tensor(self, intgame, posi, batch, k):
+
+        batch[k, 0:INPUT_WIDTH, 0, 0] = 1
+        batch[k, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
+
+        batch[k, 0, 1:INPUT_WIDTH - 1, 1] = 1
+        batch[k, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
+
+        batch[k, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
+        if(posi==0 and intgame[posi]==-1):
+            return
+        turn=0
+        starting_posi=1
+        for i in range(starting_posi,posi+1):
+            intmove=intgame[i]
+            x=intmove//BOARD_SIZE
+            y=intmove%BOARD_SIZE
+            batch[k,x+1,y+1,turn]=1
+            batch[k,x+1,y+1,(INPUT_DEPTH-1)]=0
+            turn = (turn +1) %(INPUT_DEPTH-1)
 
     def play_test(self, model_path="savedModel/model.ckpt"):
         start_time=time.time()

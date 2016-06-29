@@ -48,7 +48,6 @@ class data_util(object):
         N  =BOARD_SIZE**2
         for i, intmove in enumerate(intgame):
             sym_move=N-1-intmove
-            idx=-1
             try:
                 idx=intgame.index(sym_move)
             except ValueError:
@@ -77,12 +76,6 @@ class data_util(object):
             turn = turn % (INPUT_DEPTH - 1)
             self.batch_states[kth, x+1,y+1, turn]=1
             self.batch_states[kth, x+1,y+1, INPUT_DEPTH-1]=0
-            if(turn==0):
-                self.batch_states[kth,0:INPUT_WIDTH,0,0]=1
-                self.batch_states[kth,0:INPUT_WIDTH,INPUT_WIDTH-1,0]=1
-            else:
-                self.batch_states[kth,0,1:INPUT_WIDTH-1,1]=1
-                self.batch_states[kth,INPUT_WIDTH-1,1:INPUT_WIDTH-1,1]=1
             turn = turn + 1
 
         del g

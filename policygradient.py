@@ -157,12 +157,13 @@ class PGNetwork(object):
         batch_games=np.ndarray(shape=(batch_game_size, MAX_GAME_LENGTH), dtype=np.int16)
         game_length=np.ndarray(shape=(batch_game_size,), dtype=np.int16)
 
-        grad_placeholder_list=[]
-        apply_grad_placeholder_op_list=[]
-        grad_vals_list=[]
+
         for _ in range(30):
             self.play_one_batch_games(sess,otherSess, thisLogit,otherLogit,data, batch_game_size, batch_games, game_length, batch_reward)
             start_batch_time=time.time()
+            grad_placeholder_list = []
+            apply_grad_placeholder_op_list = []
+            grad_vals_list = []
             for i in range(batch_game_size):
                 N=game_length[i]
                 R=batch_reward[i]

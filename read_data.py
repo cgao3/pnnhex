@@ -16,11 +16,12 @@ EVAL_BATCH_SIZE=100
 
 class data_util(object):
 
-    def __init__(self):
-        self.games=[]
-        self.batchsize=None
-        self.batch_states=None
-        self.batch_states=None
+    def __init__(self, games=None, batch_size=None, batch_state=None, batch_label=None):
+        self.games=games
+        self.batchsize=batch_size
+        self.batch_states=batch_state
+        self.batch_labels=batch_label
+        self.symmetry_checking=True
 
     def load_offline_data(self, dataset_location, train_data=True):
         self.dataset = dataset_location
@@ -29,6 +30,9 @@ class data_util(object):
         self.batch_labels = np.ndarray(shape=(batchsize,), dtype=np.uint8)
         self.batchsize = batchsize
         self.read_raw_data()
+
+    def disable_symmetry_checking(self):
+        self.symmetry_checking=False
 
     def convert(self, raw_game):
         single_game = [-1]  # initially, empty board, so set first move as -1
@@ -40,6 +44,7 @@ class data_util(object):
         return single_game
 
     def read_raw_data(self):
+        self.games=[]
         with open(self.dataset, "r") as infile:
             for line in infile:
                 self.games.append(self.convert(line))
@@ -71,7 +76,7 @@ class data_util(object):
         turn = 0  # black is in 0-channel
         g= [self.games[game_i][j] for j in range(1,play_j+1,1)]
 
-        is_symmetry = self.check_symmetry(g)
+        is_symmetry = False if not self.symmetry_checking else self.check_symmetry(g)
 
         for move in g:
             x=move//BOARD_SIZE

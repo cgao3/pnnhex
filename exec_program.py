@@ -4,12 +4,14 @@ from __future__ import absolute_import
 
 import sys
 from gtpinterface import gtpinterface
+from neuralnet_agent import *
 def main():
     """
 
     :return:
     """
-    interface=gtpinterface(None)
+    agent=network_agent("None", name="test agent")
+    interface=gtpinterface(agent)
     while True:
         command=raw_input()
         success, response_move =interface.send_command(command)
@@ -17,6 +19,6 @@ def main():
         print(response_move, "\n")
         sys.stdout.flush()
 
-
-if __name__ == "main":
+if __name__ == "__main__":
+    print("hello")
     main()

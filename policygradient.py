@@ -17,11 +17,6 @@ from game_util import *
 PG_GAME_BATCH_SIZE=128
 PG_STATE_BATCH_SIZE=64
 
-NORTH_EDGE=-1
-SOUTH_EDGE=-3
-
-EAST_EDGE=-2
-WEST_EDGE=-4
 
 
 class PGNetwork(object):
@@ -56,46 +51,6 @@ class PGNetwork(object):
         #self._init=tf.initialize_all_variables()
         return logits
 
-    #input is raw score such as [-20,30,10]
-    def softmax_selection(self, logits, currentstate):
-        logits = np.squeeze(logits)
-        empty_positions=[i for i in range(BOARD_SIZE**2) if i not in currentstate]
-        #print("empty positions:", empty_positions)
-        #print(logits)
-        effective_logits=[logits[i] for i in empty_positions]
-        max_value=np.max(effective_logits)
-        effective_logits=effective_logits - max_value
-        effective_logits=np.exp(effective_logits)
-        sum_value=np.sum(effective_logits)
-        prob=effective_logits/sum_value
-        v=np.random.random()
-        sum_v=0.0
-        action=None
-        for i, e in enumerate(prob):
-            sum_v += e
-            if(sum_v >= v):
-                action=i
-                break
-        ret = empty_positions[action]
-        del empty_positions, effective_logits
-        return ret
-
-    def update_tensor(self, tensor, player, intmove):
-        x,y=intmove//BOARD_SIZE+1, intmove%BOARD_SIZE+1
-        tensor[0, x, y, player] = 1
-        tensor[0, x, y, 2] = 0
-        return tensor
-
-    def make_empty_board_tensor(self, tensor):
-        #black occupied
-        tensor[0, 0:INPUT_WIDTH, 0, 0] = 1
-        tensor[0, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
-        #white occupied
-        tensor[0, 0, 1:INPUT_WIDTH - 1, 1] = 1
-        tensor[0, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
-        #empty positions
-        tensor[0, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH-1] = 1
-
     def select_model(self, models_location_dir):
         #list all models, randomly select one
 
@@ -108,7 +63,7 @@ class PGNetwork(object):
         games=[]
         for ind in range(batch_game_size):
             self.board_tensor.fill(0)
-            self.make_empty_board_tensor(self.board_tensor)
+            make_empty_board_tensor(self.board_tensor)
             currentplayer = this_player
             gamestatus = -1
             black_group = unionfind()
@@ -120,11 +75,11 @@ class PGNetwork(object):
                     logit = sess.run(thisLogit, feed_dict={data_node: self.board_tensor})
                 else:
                     logit = otherSess.run(otherLogit, feed_dict={data_node: self.board_tensor})
-                action = self.softmax_selection(logit, moves)
-                self.update_tensor(self.board_tensor, currentplayer, action)
-                black_group, white_group = self.update_unionfind(action, currentplayer, moves, black_group, white_group)
+                action = softmax_selection(logit, moves)
+                update_tensor(self.board_tensor, currentplayer, action)
+                black_group, white_group = update_unionfind(action, currentplayer, moves, black_group, white_group)
                 currentplayer = other_player if currentplayer == this_player else this_player
-                gamestatus = self.winner(black_group, white_group)
+                gamestatus = winner(black_group, white_group)
                 moves.append(action)
                 count += 1
                 #print(count, "action ", action)
@@ -183,6 +138,7 @@ class PGNetwork(object):
                     nepoch += 1
                 k=0
                 batch_rewards.fill(0)
+                new_o1, new_o2=0,0
                 while k < PG_STATE_BATCH_SIZE:
                     for i in range(offset1, batch_game_size):
                         R=game_rewards[i]
@@ -232,47 +188,8 @@ class PGNetwork(object):
             other_win +=that
 
         print("This player wins ", this_win, "that player wins", other_win)
-        return
 
-    def winner(self, black_group, white_group):
-        if(black_group.connected(NORTH_EDGE,SOUTH_EDGE)):
-            return 0
-        elif(white_group.connected(WEST_EDGE,EAST_EDGE)):
-            return 1
-        else: return -1
 
-    def update_unionfind(self, intmove, player, board, black_group, white_group):
-        x,y=intmove//BOARD_SIZE, intmove%BOARD_SIZE
-        neighbors=[]
-        pattern=[(-1,0),(0,-1),(0,1),(1,0),(-1,1),(1,-1)]
-        for p in pattern:
-            x1,y1=p[0]+x,p[1]+y
-            if 0 <= x1 < BOARD_SIZE and 0 <= y1 < BOARD_SIZE:
-                neighbors.append((x1,y1))
-        if(player==0):
-
-            if(y==0):
-                black_group.join(intmove,NORTH_EDGE)
-            if(y==BOARD_SIZE-1):
-                black_group.join(intmove,SOUTH_EDGE)
-
-            for m in neighbors:
-                m2=m[0]*BOARD_SIZE+m[1]
-                if(m2 in board and list(board).index(m2) % 2 == player):
-                    black_group.join(m2, intmove)
-        else:
-
-            if(x==0):
-                white_group.join(intmove, WEST_EDGE)
-            if(x==BOARD_SIZE-1):
-                white_group.join(intmove, EAST_EDGE)
-
-            for m in neighbors:
-                im = m[0] * BOARD_SIZE + m[1]
-                if (im in board and list(board).index(im) % 2 == player):
-                    white_group.join(im, intmove)
-        #print(black_group.parent)
-        return (black_group, white_group)
 
 if __name__ == "__main__":
     pgtest = PGNetwork("hello")

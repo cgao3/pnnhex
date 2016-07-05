@@ -39,8 +39,8 @@ def intmove_to_raw(intmove):
 
 def state_to_str(g):
     size=BOARD_SIZE
-    white = 'O'
-    black = '@'
+    white = 'W'
+    black = 'B'
     empty = '.'
     ret = '\n'
     coord_size = len(str(size))

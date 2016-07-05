@@ -20,6 +20,7 @@ class gtpinterface(object):
         commands["list_commands"]=self.gtp_list_commands
         commands["clear_board"]=self.gtp_clear
         commands["gamestatus"]=self.gtp_gamestatus
+        commands["close"]=self.gtp_close
 
         self.commands=commands
 
@@ -47,7 +48,7 @@ class gtpinterface(object):
         return True,""
 
     def gtp_play(self, args):
-        #play black/white
+        #play black/white a1
         assert(len(args)==2)
         intmove=raw_move_to_int(args[1])
         assert(0 <= intmove <BOARD_SIZE*BOARD_SIZE)
@@ -72,10 +73,22 @@ class gtpinterface(object):
         :return:
         """
         raw_move=self.agent.generate_move()
+
+        assert(args[0][0]=='b' or args[0][0]=='w')
+        x=args[0:]
+        x.append(raw_move)
+        self.gtp_play(x)
         return True, raw_move
 
     def gtp_show(self, args):
         return True, state_to_str(self.agent.game_state)
+
+    def gtp_close(self, args):
+        try:
+            self.agent.sess.close()
+            return True, ""
+        except AttributeError:
+            return True, ""
 
     def gtp_gamestatus(self, args):
         status=self.agent.gamestatus()

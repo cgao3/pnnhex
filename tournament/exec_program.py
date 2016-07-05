@@ -1,4 +1,4 @@
-#!/Users/gc/tensorflow/bin/python
+#!/usr/bin/python
 
 from __future__ import division
 from __future__ import print_function
@@ -17,9 +17,8 @@ def main():
     interface=gtpinterface(agent)
     while True:
         command=raw_input()
-        success, response_move =interface.send_command(command)
-        if not success: print("invalid command")
-        print(response_move, "\n")
+        success, response =interface.send_command(command)
+        print("= " if success else "? ", response, "\n")
         sys.stdout.flush()
 
 if __name__ == "__main__":

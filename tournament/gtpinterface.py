@@ -38,6 +38,8 @@ class gtpinterface(object):
         return True, self.commands.keys()
 
     def gtp_quit(self, args):
+        if self.agent.sess!=None:
+            self.agent.sess.close()
         sys.exit()
 
     def gtp_clear(self, args):

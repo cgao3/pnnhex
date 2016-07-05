@@ -1,21 +1,21 @@
-import tensorflow as tf
 
 
-v1=tf.Variable(23.0)
-v2=tf.Variable(2.0)
+import numpy as np
 
-v3=tf.div(v1,v2)
-v4=tf.mul(v1,v2)
+def ack(m, n):
+    A=np.zeros(dtype=np.int32, shape=(m+1, n+100))
 
-init=tf.initialize_all_variables()
+    for j in range(n+100):
+        A[0][j]=j+1
 
-sess1=tf.Session()
-sess1.run(init)
-print(sess1.run(v3))
+    for i in range(1, m+1):
+        for j in range(n+50):
+            if j==0:
+                A[i][j]=A[i-1][1]
+            else:
+                A[i][j]=A[i-1][A[i][j-1]]
 
-sess2=tf.Session()
-sess2.run(init)
-print(sess2.run(v4))
-sess1.close()
+    print(A)
+    print("ack(%d,%d)"%(m,n), "=", A[m][n])
 
-sess2.close()
+ack(3,4)

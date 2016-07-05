@@ -1,3 +1,5 @@
+#!/Users/gc/tensorflow/bin/python
+
 from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
@@ -11,7 +13,7 @@ def main():
 
     :return:
     """
-    agent=network_agent("None", name="test agent")
+    agent=network_agent("../savedModel/model.ckpt", name="test agent")
     interface=gtpinterface(agent)
     while True:
         command=raw_input()
@@ -21,5 +23,4 @@ def main():
         sys.stdout.flush()
 
 if __name__ == "__main__":
-    print("hello")
     main()

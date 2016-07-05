@@ -22,13 +22,14 @@ class network_agent(object):
         make_empty_board_tensor(self.tensor)
         self.black_groups=unionfind()
         self.white_groups=unionfind()
+        self.load_model()
 
     def load_model(self):
         self.data_node = tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        saver = tf.train.Saver()
         self.sess=tf.Session()
-        self.network = PGNetwork()
+        self.network = PGNetwork("neural net agent")
         self.logit=self.network.model(self.data_node)
+        saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)
 
     #0-black player, 1-white player

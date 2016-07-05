@@ -68,6 +68,24 @@ def run_single_match(black_agent, white_agent, verbose=False):
     return winner
 
 if __name__ == "__main__":
-    parser=argparse.ArgumentParser(description="tournament between agents")
-    parser.add_argument("num_games", type=int, help="num of paired games playing")
-    parser.add_argument("--verbose","-v",action="stroe_consnat", const=True, default=False, )
+    #parser=argparse.ArgumentParser(description="tournament between agents")
+    #parser.add_argument("num_games", type=int, help="num of paired games playing")
+    #parser.add_argument("--verbose","-v",action="stroe_consnat", const=True, default=False, help="verbose or not")
+
+    #args=parser.parse_args()
+    num_games=1
+    think_time=10
+    net_exe="./exec_program.py 2>/dev/null"
+    wolve_exe="/Users/gc/benzene/src/wolve/wolve 2>/dev/null"
+    wolve=wrapper_agent(wolve_exe)
+    net=wrapper_agent(net_exe)
+    wolve.sendCommand("param_wolve max_time "+think_time)
+
+    for i in range(num_games):
+        wolve.reconnect()
+        wolve.sendCommand("param_wolve max_time "+think_time)
+        wolve.sendCommand("boardsize "+BOARD_SIZE)
+        win=run_single_match(wolve, net)
+    net.sendCommand("quit")
+
+

@@ -124,7 +124,13 @@ class PGNetwork(object):
         opt_op=opt.minimize(loss)
         win1=0
         win2=0
-        for _ in range(50):
+        
+        ITERATION_NUM=50
+        MAX_ITE=10
+        ite=0
+        g_ite=0
+
+        while ite < ITERATION_NUM:
             games,_tmp1,_tmp2=self.play_one_batch_games(sess,otherSess, thisLogit,otherLogit,data,batch_game_size, game_rewards)
             win1 += _tmp1
             win2 += _tmp2
@@ -157,13 +163,21 @@ class PGNetwork(object):
                     if k<PG_STATE_BATCH_SIZE:
                         offset1, offset2 = 0,0
                 assert(new_o1==o1 and new_o2==o2)
-
                 offset1, offset2=o1,o2
                 sess.run(opt_op, feed_dict={batch_data_node:batch_data, batch_label_node:batch_labels, batch_reward_node: batch_rewards})
 
             print("time cost for all batch of games", time.time()-start_batch_time)
+
+            ite += 1
+            if ite == ITERATION_NUM:
+                saver.save(sess, "savedModel/model_pg.ckpt")
+                saver.restore(otherSess, "savedModel/model_pg.ckpt")
+                g_ite +=1
+                if g_ite < MAX_ITE:
+                    ite=0
+                print("Replace opponenet with new model, ", g_ite)
+
         print("In total, this win", win1, "opponenet win", win2)
-        saver.save(sess, "savedModel/model2.ckpt")
         otherSess.close()
         sess.close()
 

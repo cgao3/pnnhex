@@ -83,6 +83,7 @@ def update_tensor(tensor, player, intmove):
     return tensor
 
 def make_empty_board_tensor(tensor):
+    tensor.fill(0)
     # black occupied
     tensor[0, 0:INPUT_WIDTH, 0, 0] = 1
     tensor[0, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1

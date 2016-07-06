@@ -12,7 +12,7 @@ import time
 from unionfind import unionfind
 
 
-class wrapper_agent(object):
+class WrapperAgent(object):
 
     def __init__(self, executable):
         self.executable=executable
@@ -45,22 +45,27 @@ def run_single_match(black_agent, white_agent, verbose=False):
         if turn==0:
             move = black_agent.sendCommand("genmove black").strip()
             if move == "resign":
+                print("black resign")
+                print(state_to_str(game))
                 return 1
             white_agent.sendCommand("play black "+move)
         else:
             move=white_agent.sendCommand("genmove white").strip()
             if move=="resign":
+                print("white resign")
+                print(state_to_str(game))
                 return 0
             black_agent.sendCommand("play white "+move)
         imove=raw_move_to_int(move)
-        game.append(imove)
-
         black_groups, white_groups=update_unionfind(imove, turn, game, black_groups, white_groups)
         gamestatus=winner(black_groups,white_groups)
+        game.append(imove)
         if verbose:
             print(state_to_str(game))
         turn=(turn+1)%2
         sys.stdout.flush()
+    print("gamestatus", gamestatus)
+    print(state_to_str(game))
     return gamestatus
 
 if __name__ == "__main__":
@@ -69,12 +74,13 @@ if __name__ == "__main__":
     #parser.add_argument("--verbose","-v",action="stroe_consnat", const=True, default=False, help="verbose or not")
 
     #args=parser.parse_args()
-    num_games=10
-    think_time=5
+    num_games=100
+    think_time=1
     net_exe="./exec_program.py 2>/dev/null"
     wolve_exe="/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"
-    wolve=wrapper_agent(wolve_exe)
-    net=wrapper_agent(net_exe)
+    wolve=WrapperAgent(wolve_exe)
+    net=WrapperAgent(net_exe)
+    #net2=wrapper_agent(net_exe)
     wolve.sendCommand("param_wolve max_time "+repr(think_time))
     white_win_count=0
     black_win_count=0
@@ -82,8 +88,8 @@ if __name__ == "__main__":
         wolve.reconnect()
         wolve.sendCommand("param_wolve max_time "+ repr(think_time))
         wolve.sendCommand("boardsize "+ repr(BOARD_SIZE))
-        win=run_single_match(net, wolve, True)
+        win=run_single_match(net, wolve, False)
         if win==0: black_win_count += 1
-        else: white_win_count +=1
+        if win==1: white_win_count +=1
     net.sendCommand("close")
     print("black win ", black_win_count, "white win count ", white_win_count)

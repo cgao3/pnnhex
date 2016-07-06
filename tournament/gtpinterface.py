@@ -7,7 +7,7 @@ sys.path.append("..")
 
 from game_util import *
 
-class gtpinterface(object):
+class GTPInterface(object):
 
     def __init__(self, agent):
         self.agent=agent

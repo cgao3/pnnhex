@@ -6,15 +6,15 @@ from __future__ import absolute_import
 
 import sys
 sys.path.append("..")
-from gtpinterface import gtpinterface
+from gtpinterface import GTPInterface
 from neuralnet_agent import *
 def main():
     """
 
     :return:
     """
-    agent=network_agent("../savedModel/model.ckpt", name="test agent")
-    interface=gtpinterface(agent)
+    agent=NetworkAgent("../savedModel/model2.ckpt", name="test agent")
+    interface=GTPInterface(agent)
     while True:
         command=raw_input()
         success, response =interface.send_command(command)

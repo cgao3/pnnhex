@@ -104,7 +104,7 @@ class PGNetwork(object):
         thisLogit=self.model(data)
         saver.restore(sess,"savedModel/model.ckpt")
         batch_game_size=128
-        opt = tf.train.GradientDescentOptimizer(0.02/batch_game_size)
+        opt = tf.train.GradientDescentOptimizer(0.01/batch_game_size)
         #opt =tf.train.AdamOptimizer()
 
         batch_reward_node = tf.placeholder(dtype=np.float32, shape=(PG_STATE_BATCH_SIZE,))
@@ -124,7 +124,7 @@ class PGNetwork(object):
         opt_op=opt.minimize(loss)
         win1=0
         win2=0
-        for _ in range(30):
+        for _ in range(50):
             games,_tmp1,_tmp2=self.play_one_batch_games(sess,otherSess, thisLogit,otherLogit,data,batch_game_size, game_rewards)
             win1 += _tmp1
             win2 += _tmp2
@@ -157,12 +157,13 @@ class PGNetwork(object):
                     if k<PG_STATE_BATCH_SIZE:
                         offset1, offset2 = 0,0
                 assert(new_o1==o1 and new_o2==o2)
-                assert(batch_rewards[-1]==-1.0 or batch_rewards[-1]==1.0)
+
                 offset1, offset2=o1,o2
                 sess.run(opt_op, feed_dict={batch_data_node:batch_data, batch_label_node:batch_labels, batch_reward_node: batch_rewards})
 
             print("time cost for all batch of games", time.time()-start_batch_time)
         print("In total, this win", win1, "opponenet win", win2)
+        saver.save(sess, "savedModel/model2.ckpt")
         otherSess.close()
         sess.close()
 
@@ -182,7 +183,7 @@ class PGNetwork(object):
         game_rewards = np.ndarray(shape=(batch_game_size,), dtype=np.float32)
         this_win=0
         other_win=0
-        for _ in range(30):
+        for _ in range(3):
             _, this, that=self.play_one_batch_games(sess, otherSess, thisLogit, otherLogit, data, batch_game_size, game_rewards)
             this_win += this
             other_win +=that
@@ -192,6 +193,6 @@ class PGNetwork(object):
 
 
 if __name__ == "__main__":
-    pgtest = PGNetwork("hello")
+    pgtest = PGNetwork("pg test")
     pgtest.selfplay()
     #pgtest.test_play()

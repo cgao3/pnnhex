@@ -9,7 +9,7 @@ from game_util import *
 from unionfind import *
 from policygradient import PGNetwork
 
-class network_agent(object):
+class NetworkAgent(object):
 
     def __init__(self, model_location, name):
         self.model_path=model_location
@@ -18,8 +18,8 @@ class network_agent(object):
 
     def initialize_game(self):
         self.game_state=[]
-        self.tensor=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        make_empty_board_tensor(self.tensor)
+        self.boardtensor=np.zeros(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        make_empty_board_tensor(self.boardtensor)
         self.black_groups=unionfind()
         self.white_groups=unionfind()
         self.load_model()
@@ -34,13 +34,13 @@ class network_agent(object):
 
     #0-black player, 1-white player
     def play_move(self, intplayer, intmove):
-        self.game_state.append(intmove)
-        update_tensor(self.tensor, intplayer, intmove)
+        update_tensor(self.boardtensor, intplayer, intmove)
         self.black_groups, self.white_groups=\
             update_unionfind(intmove, intplayer, self.game_state, self.black_groups, self.white_groups)
+        self.game_state.append(intmove)
 
     def generate_move(self):
-        logits=self.sess.run(self.logit, feed_dict={self.data_node:self.tensor})
+        logits=self.sess.run(self.logit, feed_dict={self.data_node:self.boardtensor})
         intmove=softmax_selection(logits, self.game_state)
         raw_move=intmove_to_raw(intmove)
         assert(ord('a') <= ord(raw_move[0]) <= ord('z') and 0<= int(raw_move[1:]) <BOARD_SIZE**2)

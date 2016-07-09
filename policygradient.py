@@ -22,13 +22,13 @@ tf.flags.DEFINE_string("pg_model_dir", "savedPGModel/", "where the model is save
 tf.flags.DEFINE_string("supervised_model_path", "savedModel/model.ckpt", "where the supervised learning model is")
 
 tf.flags.DEFINE_float("gamma", 0.95, "reward discount factor")
-tf.flags.DEFINE_float("alpha", 0.1, "learning rate")
+tf.flags.DEFINE_float("alpha", 0.01, "learning rate")
 
-tf.flags.DEFINE_integer("max_num_to_keep", 100, "max number of models kept in pg_model_dir")
+tf.flags.DEFINE_integer("max_num_to_keep", 10, "max number of models kept in pg_model_dir")
 
 tf.flags.DEFINE_integer("max_pg_iteration", 10, "max number of pg iterations to train")
 #num_pg_batch_per_ite*batch_game_size is the number training examples per pg_iteration
-tf.flags.DEFINE_integer("num_batch_game_per_ite", 5, "how many batch games per iteration" )
+tf.flags.DEFINE_integer("num_batch_game_per_ite", 10, "how many batch games per iteration" )
 
 FLAGS=tf.flags.FLAGS
 
@@ -70,15 +70,17 @@ class PGNetwork(object):
         return os.path.join(models_dir, np.random.choice(l2))
 
     def play_one_batch_games(self, sess, otherSess, thisLogit, otherLogit, data_node, batch_game_size, batch_reward):
-        this_player = 0
-        other_player = 1
+
         this_win_count=0
         other_win_count=0
+        import random
+        this_player=random.randint(0,1)
+        other_player=1-this_player
         games=[]
         for ind in range(batch_game_size):
             self.board_tensor.fill(0)
             make_empty_board_tensor(self.board_tensor)
-            currentplayer = this_player
+            currentplayer = 0
             gamestatus = -1
             black_group = unionfind()
             white_group = unionfind()

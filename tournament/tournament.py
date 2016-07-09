@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
     #args=parser.parse_args()
     num_games=100
-    think_time=1
+    think_time=5
     net_exe="./exec_program.py 2>/dev/null"
     wolve_exe="/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"
     wolve=WrapperAgent(wolve_exe)
@@ -91,5 +91,6 @@ if __name__ == "__main__":
         win=run_single_match(net, wolve, False)
         if win==0: black_win_count += 1
         if win==1: white_win_count +=1
+        print(i+1, "black: ", black_win_count, "white: ", white_win_count)
     net.sendCommand("close")
     print("black win ", black_win_count, "white win count ", white_win_count)

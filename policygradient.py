@@ -8,6 +8,7 @@ import numpy as np
 from unionfind import unionfind
 import tensorflow as tf
 import time
+import os
 
 from six.moves import xrange
 
@@ -17,7 +18,19 @@ from game_util import *
 PG_GAME_BATCH_SIZE=128
 PG_STATE_BATCH_SIZE=64
 
+tf.flags.DEFINE_string("pg_model_dir", "savedPGModel/", "where the model is saved")
+tf.flags.DEFINE_string("supervised_model_path", "savedModel/model.ckpt", "where the supervised learning model is")
 
+tf.flags.DEFINE_float("gamma", 0.95, "reward discount factor")
+tf.flags.DEFINE_float("alpha", 0.1, "learning rate")
+
+tf.flags.DEFINE_integer("max_num_to_keep", 100, "max number of models kept in pg_model_dir")
+
+tf.flags.DEFINE_integer("max_pg_iteration", 10, "max number of pg iterations to train")
+#num_pg_batch_per_ite*batch_game_size is the number training examples per pg_iteration
+tf.flags.DEFINE_integer("num_batch_game_per_ite", 5, "how many batch games per iteration" )
+
+FLAGS=tf.flags.FLAGS
 
 class PGNetwork(object):
 
@@ -51,10 +64,11 @@ class PGNetwork(object):
         #self._init=tf.initialize_all_variables()
         return logits
 
-    def select_model(self, models_location_dir):
+    def select_model(self, models_dir):
         #list all models, randomly select one
+        l2=[f for f in os.listdir(models_dir) if f.startswith("model.ckpt") and not f.endswith(".meta")]
+        return os.path.join(models_dir, np.random.choice(l2))
 
-        return "savedModel/model.ckpt"
     def play_one_batch_games(self, sess, otherSess, thisLogit, otherLogit, data_node, batch_game_size, batch_reward):
         this_player = 0
         other_player = 1
@@ -88,23 +102,25 @@ class PGNetwork(object):
             print("steps ", count, "gamestatus ", gamestatus)
             R = 1.0 if gamestatus == this_player else -1.0
             games.append([-1]+moves) #first hypothesisted action is -1
-            batch_reward[ind]=R
+            batch_reward[ind]=R*count
+
         print("this player win: ", this_win_count, "other player win: ", other_win_count)
         return (games, this_win_count, other_win_count)
 
-    def selfplay(self):
+    def selfplay(self, max_iteration):
         data=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         otherNeuroPlayer = PGNetwork("other_player")
         otherSess = tf.Session()
         otherLogit=otherNeuroPlayer.model(data)
-        saver=tf.train.Saver()
-        saver.restore(otherSess, "savedModel/model.ckpt")
+        saver=tf.train.Saver(max_to_keep=FLAGS.max_num_to_keep)
+        sl_model=FLAGS.supervised_model_path
+        saver.restore(otherSess, sl_model)
 
         sess=tf.Session()
         thisLogit=self.model(data)
-        saver.restore(sess,"savedModel/model.ckpt")
+        saver.restore(sess, sl_model)
         batch_game_size=128
-        opt = tf.train.GradientDescentOptimizer(0.01/batch_game_size)
+        opt = tf.train.GradientDescentOptimizer(FLAGS.alpha/batch_game_size)
         #opt =tf.train.AdamOptimizer()
 
         batch_reward_node = tf.placeholder(dtype=np.float32, shape=(PG_STATE_BATCH_SIZE,))
@@ -124,13 +140,12 @@ class PGNetwork(object):
         opt_op=opt.minimize(loss)
         win1=0
         win2=0
-        
-        ITERATION_NUM=50
-        MAX_ITE=10
-        ite=0
-        g_ite=0
 
-        while ite < ITERATION_NUM:
+        num_batch=FLAGS.num_batch_game_per_ite
+        batch_count=0
+        g_step=0
+
+        while batch_count < num_batch:
             games,_tmp1,_tmp2=self.play_one_batch_games(sess,otherSess, thisLogit,otherLogit,data,batch_game_size, game_rewards)
             win1 += _tmp1
             win2 += _tmp2
@@ -150,7 +165,7 @@ class PGNetwork(object):
                         R=game_rewards[i]
                         sign=1 if offset2 % 2 ==0 else -1
                         for j in range(offset2, len(games[i])-1):
-                            batch_rewards[k]=R*sign
+                            batch_rewards[k]=1.0/R*sign*(FLAGS.gamma**(len(games[i])-2-j))
                             sign=-sign
                             k += 1
                             if(k>=PG_STATE_BATCH_SIZE):
@@ -168,14 +183,17 @@ class PGNetwork(object):
 
             print("time cost for all batch of games", time.time()-start_batch_time)
 
-            ite += 1
-            if ite == ITERATION_NUM:
-                saver.save(sess, "savedModel/model_pg.ckpt")
-                saver.restore(otherSess, "savedModel/model_pg.ckpt")
-                g_ite +=1
-                if g_ite < MAX_ITE:
-                    ite=0
-                print("Replace opponenet with new model, ", g_ite)
+            batch_count += 1
+            if batch_count == num_batch:
+
+                saver.save(sess, os.path.join(FLAGS.pg_model_dir, "model.ckpt"), global_step=g_step)
+                pg_model=self.select_model(FLAGS.pg_model_dir)
+                saver.restore(otherSess, pg_model)
+                g_step +=1
+                if g_step < max_iteration:
+                    batch_count=0
+                print("Replce opponenet with new model, ", g_step)
+                print(pg_model)
 
         print("In total, this win", win1, "opponenet win", win2)
         otherSess.close()
@@ -205,8 +223,10 @@ class PGNetwork(object):
         print("This player wins ", this_win, "that player wins", other_win)
 
 
+def main(argv=None):
+    pg=PGNetwork("pg training")
+    max_ite=FLAGS.max_pg_iteration
+    pg.selfplay(max_ite)
 
 if __name__ == "__main__":
-    pgtest = PGNetwork("pg test")
-    pgtest.selfplay()
-    #pgtest.test_play()
+    tf.app.run()

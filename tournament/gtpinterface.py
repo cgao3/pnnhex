@@ -44,7 +44,7 @@ class GTPInterface(object):
         sys.exit()
 
     def gtp_clear(self, args):
-        self.agent.initialize_game()
+        self.agent.reinitialize()
         return True,""
 
     def gtp_play(self, args):

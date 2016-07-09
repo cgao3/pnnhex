@@ -161,3 +161,16 @@ def softmax_selection(logits, currentstate):
     ret = empty_positions[action]
     del empty_positions, effective_logits
     return ret
+
+
+# input is raw score such as [-20,30,10]
+def max_selection(logits, currentstate):
+    logits = np.squeeze(logits)
+    empty_positions = [i for i in range(BOARD_SIZE ** 2) if i not in currentstate]
+    # print("empty positions:", empty_positions)
+    # print(logits)
+    effective_logits = [logits[i] for i in empty_positions]
+    max_ind=np.argmax(effective_logits)
+    ret = empty_positions[max_ind]
+    del empty_positions, effective_logits
+    return ret

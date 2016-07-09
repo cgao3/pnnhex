@@ -10,10 +10,10 @@ from gtpinterface import GTPInterface
 from neuralnet_agent import *
 def main():
     """
-
     :return:
     """
-    agent=NetworkAgent("../savedModel/model2.ckpt", name="test agent")
+    model="../savedPGModel/model.ckpt-9"
+    agent=NetworkAgent(model, name="test agent")
     interface=GTPInterface(agent)
     while True:
         command=raw_input()

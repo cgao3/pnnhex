@@ -22,9 +22,10 @@ class SLNetwork(object):
     kernal default size 3x3
     kernal depth 80 every layer
     '''
-    def __init__(self, trainDataPath, testDataPath):
+    def __init__(self, trainDataPath=None, testDataPath=None, name=None):
         self.train_data_path=trainDataPath
         self.test_data_path=testDataPath
+        self.name=name
 
     def declare_layers(self, num_hidden_layer):
         self.num_hidden_layer=num_hidden_layer

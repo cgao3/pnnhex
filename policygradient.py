@@ -18,11 +18,11 @@ from game_util import *
 PG_GAME_BATCH_SIZE=128
 PG_STATE_BATCH_SIZE=64
 
-tf.flags.DEFINE_string("pg_model_dir", "savedPGModel/", "where the model is saved")
+tf.flags.DEFINE_string("pg_model_dir", "opponent_pool/", "where the model is saved")
 tf.flags.DEFINE_string("supervised_model_path", "savedModel/model.ckpt", "where the supervised learning model is")
 
 tf.flags.DEFINE_float("gamma", 0.95, "reward discount factor")
-tf.flags.DEFINE_float("alpha", 0.01, "learning rate")
+tf.flags.DEFINE_float("alpha", 0.02, "learning rate")
 
 tf.flags.DEFINE_integer("max_num_to_keep", 10, "max number of models kept in pg_model_dir")
 
@@ -101,8 +101,8 @@ class PGNetwork(object):
                 #print(count, "action ", action)
             if(gamestatus==this_player): this_win_count += 1
             else: other_win_count += 1
-            print("steps ", count, "gamestatus ", gamestatus)
-            R = 1.0 if gamestatus == this_player else -1.0
+            #print("steps ", count, "gamestatus ", gamestatus)
+            R = 1.0/count if gamestatus == this_player else -1.0/count
             games.append([-1]+moves) #first hypothesisted action is -1
             batch_reward[ind]=R*count
 
@@ -148,10 +148,10 @@ class PGNetwork(object):
         g_step=0
 
         while batch_count < num_batch:
+            start_batch_time = time.time()
             games,_tmp1,_tmp2=self.play_one_batch_games(sess,otherSess, thisLogit,otherLogit,data,batch_game_size, game_rewards)
             win1 += _tmp1
             win2 += _tmp2
-            start_batch_time=time.time()
             data_tool=data_util(games, PG_STATE_BATCH_SIZE, batch_data, batch_labels)
             data_tool.disable_symmetry_checking()
             offset1=0; offset2=0; nepoch=0
@@ -167,7 +167,7 @@ class PGNetwork(object):
                         R=game_rewards[i]
                         sign=1 if offset2 % 2 ==0 else -1
                         for j in range(offset2, len(games[i])-1):
-                            batch_rewards[k]=1.0/R*sign*(FLAGS.gamma**(len(games[i])-2-j))
+                            batch_rewards[k]=R*sign*(FLAGS.gamma**(len(games[i])-2-j))
                             sign=-sign
                             k += 1
                             if(k>=PG_STATE_BATCH_SIZE):
@@ -183,7 +183,7 @@ class PGNetwork(object):
                 offset1, offset2=o1,o2
                 sess.run(opt_op, feed_dict={batch_data_node:batch_data, batch_label_node:batch_labels, batch_reward_node: batch_rewards})
 
-            print("time cost for all batch of games", time.time()-start_batch_time)
+            print("time cost for batch of games", time.time()-start_batch_time)
 
             batch_count += 1
             if batch_count == num_batch:

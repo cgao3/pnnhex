@@ -11,22 +11,24 @@ from supervised import SLNetwork
 
 from unionfind import unionfind
 from game_util import  *
+from layer import Layer
 
 SL_MODEL_PATH="savedModel/model.ckpt"
 PG_MODEL_PATH="opponent_pool/model-10.ckpt"
 
+VNET_BATCH_SIZE=64
 
 NUM_EXAMPLES=100000
-EXAMPLE_DIR="examples/"
+EXAMPLE_DIR="examples_valuenet/"
 
 class SLNetPlayer(object):
 
     def __init__(self):
         self.data_node=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         slnet=SLNetwork("sl_player")
-        with tf.name_scope("sl_player"):
+        with tf.variable_scope("sl_player"):
             slnet.declare_layers()
-            self.logits_node=slnet.model(self.data_node)
+        self.logits_node=slnet.model(self.data_node)
 
     def open_session(self):
         sess=tf.Session()
@@ -50,9 +52,7 @@ class PGNetPlayer(object):
     def __int__(self):
         self.data_node = tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         pgnet= PGNetwork("pg_player")
-        with tf.name_scope("pg_player"):
-            pgnet.declare_layers()
-            self.logits_node=pgnet.model(self.data_node)
+        self.logits_node=pgnet.model(self.data_node)
 
 
     def open_session(self):
@@ -60,7 +60,6 @@ class PGNetPlayer(object):
         self.sess=sess
         saver=tf.train.Saver()
         saver.restore(sess, PG_MODEL_PATH)
-
 
     def close_session(self):
         self.sess.close()
@@ -163,6 +162,33 @@ class ValueNet(object):
     def regression(self):
         
         pass
+
+    # the same structure as supervised network
+    def model(self):
+        data_node=tf.placeholder(dtype=tf.float32, shape=(VNET_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        num_hidden_layer=8
+        self.num_hidden_layer = num_hidden_layer
+        self.input_layer = Layer("input_layer", paddingMethod="VALID")
+        self.conv_layer = [None] * num_hidden_layer
+
+        for i in range(num_hidden_layer):
+            self.conv_layer[i] = Layer("conv%d_layer" % i)
+
+        kernal_size=(3, 3)
+        kernal_depth=80
+
+        output = [None] * self.num_hidden_layer
+        weightShape0 = kernal_size + (INPUT_DEPTH, kernal_depth)
+        output[0] = self.input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
+
+        weightShape = kernal_size + (kernal_depth, kernal_depth)
+        for i in range(self.num_hidden_layer - 1):
+            output[i + 1] = self.conv_layer[i].convolve(output[i], weight_shape=weightShape,
+                                                        bias_shape=(kernal_depth,))
+
+        logits = self.conv_layer[self.num_hidden_layer - 1].one_filter_out(output[self.num_hidden_layer - 1],
+                                                                               BOARD_SIZE)
+        return logits
 
 
 

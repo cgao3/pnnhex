@@ -9,11 +9,13 @@ import numpy as np
 from layer import Layer
 from read_data import *
 from six.moves import xrange
+import os
+
+SL_MODEL_PATH="slmodel/model.ckpt"
+TRAIN_DATA_PATH="data/7x7rawgames.dat"
+TEST_DATA_PATH="data/test7x7.dat"
 
 tf.app.flags.DEFINE_boolean("training", True, "False if for evaluation")
-tf.app.flags.DEFINE_string("check_point_dir", "savedModel/", "path to save the model")
-tf.app.flags.DEFINE_string("train_data_dir", "data/", "path to training data")
-tf.app.flags.DEFINE_string("test_data_dir", "test/", "path to test data")
 FLAGS = tf.app.flags.FLAGS
 
 class SLNetwork(object):
@@ -71,10 +73,10 @@ class SLNetwork(object):
         tf.get_variable_scope().reuse_variables()
         eval_prediction=tf.nn.softmax(self.model(self.eval_data_node))
 
-        learning_rate_global_step=tf.Variable(0)
-        starting_rate=0.1/BATCH_SIZE
-        train_step=100000 # learning rate *0.95 every train_step feed
-        learning_rate = tf.train.exponential_decay(starting_rate, learning_rate_global_step * BATCH_SIZE, train_step, 0.9, staircase=True)
+        #learning_rate_global_step=tf.Variable(0)
+        #starting_rate=0.1/BATCH_SIZE
+        #train_step=100000 # learning rate *0.95 every train_step feed
+        #learning_rate = tf.train.exponential_decay(starting_rate, learning_rate_global_step * BATCH_SIZE, train_step, 0.9, staircase=True)
         #opt = tf.train.GradientDescentOptimizer(learning_rate).minimize(loss, global_step=learning_rate_global_step)
         opt2=tf.train.AdamOptimizer().minimize(loss)
         saver = tf.train.Saver()
@@ -99,7 +101,8 @@ class SLNetwork(object):
                 if (nextepoch):
                     nepoch += 1
                 if step % print_frquence == 0:
-                    print("epoch:", nepoch, "loss: ", loss_value, "error rate:", error_rate(predictions, train_data_util.batch_labels))
+                    print("epoch:", nepoch, "loss: ", loss_value, "error rate:",
+                          error_rate(predictions, train_data_util.batch_labels))
                 if step % test_frequence == 0:
                     test_data_util.prepare_batch(0,0)
                     x=test_data_util.batch_states.astype(np.float32)
@@ -109,16 +112,18 @@ class SLNetwork(object):
                     print("evaluation error rate", error_rate(predict, test_data_util.batch_labels))
                 step += 1
 
-            saver.save(sess, FLAGS.check_point_dir + "model.ckpt")
-
+            sl_model_dir=os.path.dirname(SL_MODEL_PATH)
+            if not os.path.exists(sl_model_dir):
+                print("creating dir ", sl_model_dir)
+                os.makedirs(sl_model_dir)
+            saver.save(sess, SL_MODEL_PATH)
 
 def error_rate(predictions, labels):
     return 100.0 - 100.0 * np.sum(np.argmax(predictions, 1) == labels) / predictions.shape[0]
 
-
 def main(argv=None):
-    supervisedlearn=SLNetwork("data/7x7rawgames.dat","data/test7x7.dat")
-    num_epochs=70
+    supervisedlearn=SLNetwork(TRAIN_DATA_PATH, TEST_DATA_PATH)
+    num_epochs=50
     supervisedlearn.train(num_epochs)
 
 if __name__ == "__main__":

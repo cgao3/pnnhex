@@ -37,7 +37,6 @@ class NetworkAgent(object):
     #0-black player, 1-white player
     def play_move(self, intplayer, intmove):
         update_tensor(self.boardtensor, intplayer, intmove)
-        #self.black_groups, self.white_groups= update_unionfind(intmove, intplayer, self.game_state, self.black_groups, self.white_groups)
         self.game_state.append(intmove)
 
     def generate_move(self):

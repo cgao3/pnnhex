@@ -13,11 +13,11 @@ from unionfind import unionfind
 from game_util import  *
 from layer import Layer
 
-SL_MODEL_PATH="savedModel/model.ckpt"
+from supervised import SL_MODEL_PATH
+
 PG_MODEL_PATH="opponent_pool/model-10.ckpt"
 
 VNET_BATCH_SIZE=64
-
 NUM_EXAMPLES=100000
 EXAMPLE_DIR="examples_valuenet/"
 

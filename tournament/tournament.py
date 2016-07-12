@@ -77,7 +77,7 @@ if __name__ == "__main__":
     num_games=1000
     think_time=5
     net_exe="./exec_program.py 2>/dev/null"
-    wolve_exe="/home/chenyang/chaogao/benzene/src/wolve/wolve 2>/dev/null"
+    wolve_exe="/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"
     wolve=WrapperAgent(wolve_exe)
     net=WrapperAgent(net_exe)
     #net2=wrapper_agent(net_exe)

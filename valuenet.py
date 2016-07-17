@@ -47,6 +47,22 @@ class SLNetPlayer(object):
         logits=self.feedforward(input_tensor)
         return softmax_selection(logits, intgamestate)
 
+class Solver(object):
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def solve(intgamestate):
+        #who is to play is indicated by the gamestate
+        assert(intgamestate[0]!=-1)
+        turn=len(intgamestate)%2
+         
+        pass
+
+        return "label"
+
+
+
 
 class PGNetPlayer(object):
     def __int__(self):

@@ -12,10 +12,11 @@ from six.moves import xrange
 import os
 
 SL_MODEL_PATH="slmodel/model.ckpt"
-TRAIN_DATA_PATH="data/7x7rawgames.dat"
-TEST_DATA_PATH="data/test7x7.dat"
+TRAIN_DATA_PATH="data/13x13rawgames.dat"
+TEST_DATA_PATH="data/13x13test.dat"
 
 tf.app.flags.DEFINE_boolean("training", True, "False if for evaluation")
+tf.app.flags.DEFINE_integer("num_epoch", 100, "number of epoches")
 FLAGS = tf.app.flags.FLAGS
 
 class SLNetwork(object):
@@ -123,7 +124,7 @@ def error_rate(predictions, labels):
 
 def main(argv=None):
     supervisedlearn=SLNetwork(TRAIN_DATA_PATH, TEST_DATA_PATH)
-    num_epochs=50
+    num_epochs=FLAGS.num_epoch
     supervisedlearn.train(num_epochs)
 
 if __name__ == "__main__":

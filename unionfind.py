@@ -1,6 +1,6 @@
 class unionfind:
     """
-    author: Kenny Young
+    author: Kenny Young, github: https://github.com/kenjyoung 
     Unionfind data structure specialized for finding hex connections.
     Implementation inspired by UAlberta CMPUT 275 2015 class notes.
     """

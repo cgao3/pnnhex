@@ -5,9 +5,10 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from gtpinterface import GTPInterface
-from agents import NNAgent
 from policygradient import PG_MODEL_DIR
 import os
+import sys
+from agents import NNAgent
 
 def main():
     """

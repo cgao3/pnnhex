@@ -7,7 +7,10 @@ import sys
 from game_util import *
 import argparse
 from unionfind import unionfind
+from agents import WrapperAgent
 
+EXE_NN_AGENT_NAME="./exec_nn_agent.py"
+EXE_HEX_PATH="/home/cgao3/benzene/src/wolve/wolve"
 
 def run_single_match(black_agent, white_agent, verbose=False):
     game=[]
@@ -19,19 +22,19 @@ def run_single_match(black_agent, white_agent, verbose=False):
     gamestatus=-1
     while gamestatus==-1:
         if turn==0:
-            move = black_agent.sendCommand("genmove black").strip()
+            move = black_agent.genmove_black()
             if move == "resign":
                 print("black resign")
                 print(state_to_str(game))
                 return 1
-            white_agent.sendCommand("play black "+move)
+            white_agent.play_black(move)
         else:
-            move=white_agent.sendCommand("genmove white").strip()
+            move=white_agent.genmove_white()
             if move=="resign":
                 print("white resign")
                 print(state_to_str(game))
                 return 0
-            black_agent.sendCommand("play white "+move)
+            black_agent.play_white(move)
         imove=raw_move_to_int(move)
         black_groups, white_groups=update_unionfind(imove, turn, game, black_groups, white_groups)
         gamestatus=winner(black_groups,white_groups)
@@ -52,8 +55,8 @@ if __name__ == "__main__":
     #args=parser.parse_args()
     num_games=1000
     think_time=1
-    net_exe="./exec_program.py 2>/dev/null"
-    wolve_exe="/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"
+    net_exe=EXE_NN_AGENT_NAME+" 2>/dev/null"
+    wolve_exe=EXE_HEX_PATH+" 2>/dev/null"
     wolve=WrapperAgent(wolve_exe)
     net=WrapperAgent(net_exe)
     #net2=wrapper_agent(net_exe)

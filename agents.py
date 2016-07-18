@@ -10,6 +10,49 @@ from policygradient import PGNetwork
 import threading
 from program import Program
 
+class WrapperAgent(object):
+
+    def __init__(self, executable):
+        self.executable=executable
+        self.program=Program(self.executable, True)
+        self.name=self.program.sendCommand("name").strip()
+        self.lock=threading.Lock()
+
+    def sendCommand(self, command):
+        self.lock.acquire()
+        answer=self.program.sendCommand(command)
+        self.lock.release()
+        return answer
+
+    def reconnect(self):
+        self.program.terminate()
+        self.program=Program(self.executable, True)
+        self.lock=threading.Lock()
+
+    def sendStates(self, intgamestate):
+        turn=len(intgamestate)%2
+        for m in intgamestate:
+            raw_m=intmove_to_raw(m)
+            if turn ==0:
+                self.play_black(raw_m)
+            else: self.play_white(raw_m)
+            turn=(turn+1)%2
+
+    def play_black(self, move):
+        self.sendCommand("play black "+move)
+
+    def play_white(self, move):
+        self.sendCommand("play white "+move)
+
+    def genmove_black(self):
+        return self.sendCommand("genmove black").strip()
+
+    def genmove_white(self):
+        return self.sendCommand("genmove white").strip()
+
+    def clear_board(self):
+        self.sendCommand("clear_board")
+
 class NNAgent(object):
 
     def __init__(self, model_location, name):
@@ -48,31 +91,5 @@ class NNAgent(object):
         assert(ord('a') <= ord(raw_move[0]) <= ord('z') and 0<= int(raw_move[1:]) <BOARD_SIZE**2)
         return raw_move
 
-    def game_status(self):
-        return winner(self.black_groups, self.white_groups)
-
     def close_all(self):
         self.sess.close()
-
-
-class WrapperAgent(object):
-
-    def __init__(self, executable):
-        self.executable=executable
-        self.program=Program(self.executable, True)
-        self.name=self.program.sendCommand("name").strip()
-        self.lock=threading.Lock()
-
-    def sendCommand(self, command):
-        self.lock.acquire()
-        answer=self.program.sendCommand(command)
-        self.lock.release()
-        return answer
-
-    def reconnect(self):
-        self.program.terminate()
-        self.program=Program(self.executable, True)
-        self.lock=threading.Lock()
-
-
-

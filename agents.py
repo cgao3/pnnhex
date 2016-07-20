@@ -53,6 +53,9 @@ class WrapperAgent(object):
     def clear_board(self):
         self.sendCommand("clear_board")
 
+    def set_board_size(self, size):
+        self.sendCommand("boardsize "+repr(size))
+
 class NNAgent(object):
 
     def __init__(self, model_location, name):

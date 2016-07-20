@@ -12,95 +12,36 @@ from game_util import  *
 from layer import Layer
 from agents import WrapperAgent
 
-VALUE_NET_EXAMPLES_DIR="examples/"
 VALUE_NET_BATCH_SIZE=64
 
 NUM_EXAMPLES=1e6
 
-class RandomPlayer(object):
-
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def uniform_random_genmove(intgamestate):
-        N=BOARD_SIZE**2
-        empty_positions=[i for i in range(N) if i not in intgamestate]
-        return np.random.choice(empty_positions)
-
 class ValueNet(object):
 
-    def __init__(self, exe1, exe2, max_time1=0.5, max_time=1):
-        self.fast_player=WrapperAgent(exe1)
-        self.strong_player=WrapperAgent(exe2)
-
-    def produce_data(self, num_examples=10000):
-        count=0
-        fout=open(VALUE_NET_EXAMPLES_DIR+"exam.dat","w+")
-        while count < num_examples:
-            raw_game, label=self.generate_one_example()
-            if (raw_game, label):
-                count += 1
-                for m in raw_game:
-                    fout.write(m+" ")
-                fout.write("\n"+label+"\n")
-        fout.close()
-
-    def generate_one_example(self):
-        self.fast_player.clear_board()
-        self.fast_player.sendCommand("param_wolve max_time 0.5")
-
-        self.strong_player.clear_board()
-        self.strong_player.sendCommand("param_wolve max_time 1")
-        U = np.random.randint(0, BOARD_SIZE ** 2)
-        g = []
-        black_groups=unionfind()
-        white_groups=unionfind()
-        turn=0
-        status=-1
-        #Fast Player play to U
-        for i in range(0, U):
-            move = self.fast_player.genmove_black() if turn ==0 else self.fast_player.genmove_white()
-            intmove=raw_move_to_int(move)
-            black_groups, white_groups=update_unionfind(intmove, turn, g, black_groups, white_groups)
-            status=winner(black_groups, white_groups)
-            turn = (turn +1)%2
-            g.append(intmove)
-            if (status == 0 or status == 1): return
-
-        #Random play at step U
-        int_random_move=RandomPlayer.uniform_random_genmove(g)
-        black_groups, white_groups=update_unionfind(int_random_move, turn, g, black_groups, white_groups)
-        status=winner(black_groups,white_groups)
-        g.append(int_random_move)
-        example_state=list(g)
-        example_state_player=turn
-        turn = (turn+1)%2
-        if status == 0 or status == 1: return
-
-        #Strong play from U+1 till game ends
-        while status==-1:
-            move=self.strong_player.genmove_black() if turn ==0 else self.strong_player.genmove_white()
-            intmove=raw_move_to_int(move)
-            black_groups,white_groups=update_unionfind(intmove, turn, g, black_groups,white_groups)
-            status=winner(black_groups,white_groups)
-            turn = (turn + 1)%2
-            g.append(intmove)
-        R = 1.0 if status == example_state_player else -1.0
-
-        return self.build_example(example_state, R)
-
-    #label is win or loss, +1 or -1, OR modified game reward
-    def build_example(self, intgamestate, label):
-        raw_game=[]
-        for m in intgamestate:
-            rawmove=intmove_to_raw(m)
-            raw_game.append(rawmove)
-        return (raw_game, label)
+    def __init__(self):
+      self.games=None
+      self.batch_states=np.ndarray(dtype=np.float32, shape=(VALUE_NET_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+      self.batch_label=np.ndarray(dtype=np.float32, shape=(VALUE_NET_BATCH_SIZE))
+      pass
 
     def regression(self):
-        
         pass
+    def read_examples(self, data_path):
+        if self.games==None:
+            self.games=[]
+            with open(data_path, "r") as f:
+                for line in f:
+                    self.games.append(line.split())
+
+    def build_single_example(self, offset, kth):
+        R=self.games[offset][-1]
+        
+
+    def prepare_batch(self, offset, batchsize):
+        count=0
+        while count<batchsize:
+            for i in xrange(offset, len(self.games)):
+
 
     # the same structure as supervised network
     def model(self):
@@ -126,9 +67,8 @@ class ValueNet(object):
                                                         bias_shape=(kernal_depth,))
         logits = self.conv_layer[self.num_hidden_layer - 1].one_filter_out(output[self.num_hidden_layer - 1],
                                                                                BOARD_SIZE)
+
         return logits
-
-
 
 def main(argv=None):
     exe1="/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"

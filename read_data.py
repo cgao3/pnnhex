@@ -7,7 +7,7 @@ from six.moves import xrange
 
 import numpy as np
 
-BOARD_SIZE = 5
+BOARD_SIZE = 13
 BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 3
@@ -120,7 +120,7 @@ class data_util(object):
 
 if __name__ == "__main__":
     datatest=data_util()
-    datatest.load_offline_data("data/train_games.dat", train_data=True)
+    datatest.load_offline_data("data/7x7rawgames.dat", train_data=True)
     offset1 = 0
     offset2 = 0
     nepoch=0

@@ -12,8 +12,8 @@ from six.moves import xrange
 import os
 
 SL_MODEL_PATH="slmodel/model.ckpt"
-TRAIN_DATA_PATH="data/13x13rawgames.dat"
-TEST_DATA_PATH="data/13x13test.dat"
+TRAIN_DATA_PATH="data/7x7rawgames.dat"
+TEST_DATA_PATH="data/test7x7.dat"
 
 tf.app.flags.DEFINE_boolean("training", True, "False if for evaluation")
 tf.app.flags.DEFINE_integer("num_epoch", 100, "number of epoches")
@@ -25,27 +25,22 @@ class SLNetwork(object):
     kernal default size 3x3
     kernal depth 80 every layer
     '''
-    def __init__(self, trainDataPath=None, testDataPath=None, name=None):
+    def __init__(self, trainDataPath=None, testDataPath=None):
         self.train_data_path=trainDataPath
         self.test_data_path=testDataPath
-        self.name=name
+        self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        self.train_labels_node = tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
+        self.eval_data_node = tf.placeholder(tf.float32, shape=(EVAL_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        self.eval_label_node = tf.placeholder(tf.int32, shape=(EVAL_BATCH_SIZE,))
 
     def declare_layers(self, num_hidden_layer):
         self.num_hidden_layer=num_hidden_layer
-        self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        self.train_labels_node = tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
-
-        self.eval_data_node=tf.placeholder(tf.float32, shape=(EVAL_BATCH_SIZE,INPUT_WIDTH,INPUT_WIDTH, INPUT_DEPTH))
-        self.eval_label_node=tf.placeholder(tf.int32, shape=(EVAL_BATCH_SIZE,))
-
         self.input_layer = Layer("input_layer", paddingMethod="VALID")
-
         self.conv_layer=[None]*num_hidden_layer
         for i in range(num_hidden_layer):
             self.conv_layer[i] = Layer("conv%d_layer" % i)
 
     def model(self, data_node, kernal_size=(3,3), kernal_depth=80):
-
         output = [None] * self.num_hidden_layer
         weightShape0=kernal_size+(INPUT_DEPTH, kernal_depth)
         output[0]=self.input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
@@ -54,19 +49,17 @@ class SLNetwork(object):
         for i in range(self.num_hidden_layer-1):
             output[i+1]=self.conv_layer[i].convolve(output[i], weight_shape=weightShape, bias_shape=(kernal_depth,))
 
-        logits=self.conv_layer[self.num_hidden_layer-1].one_filter_out(output[self.num_hidden_layer-1], BOARD_SIZE)
+        logits=self.conv_layer[self.num_hidden_layer-1].move_logits(output[self.num_hidden_layer-1], BOARD_SIZE)
 
         return logits
 
-    #call config before train..
-    def train(self, num_epochs):
 
+    def train(self, num_epochs):
         train_data_util=data_util()
         train_data_util.load_offline_data(self.train_data_path, train_data=True)
         test_data_util=data_util()
         test_data_util.load_offline_data(self.test_data_path,train_data=False)
         print("train and test data loaded..")
-
         self.declare_layers(num_hidden_layer=8)
         logits=self.model(self.train_data_node)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, self.train_labels_node))

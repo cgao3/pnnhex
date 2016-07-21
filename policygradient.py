@@ -37,11 +37,9 @@ FLAGS=tf.flags.FLAGS
 class PGNetwork(object):
 
     def __init__(self, name):
-        self.bashline=0.0
         self.board_tensor = np.zeros(shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.float32)
 
-        with tf.variable_scope(name):
-            self.declare_layers(num_hidden_layer=8)
+        self.declare_layers(num_hidden_layer=8)
 
     #the same structure as supervised network
     def declare_layers(self, num_hidden_layer):
@@ -228,7 +226,7 @@ class PGNetwork(object):
         other_win=0
         for _ in range(3):
             _, this, that=self.play_one_batch_games(sess, otherSess, thisLogit, otherLogit, data, batch_game_size, game_rewards)
-            this_win += this
+            this_win  += this
             other_win +=that
 
         print("This player wins ", this_win, "that player wins", other_win)

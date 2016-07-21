@@ -94,6 +94,22 @@ def make_empty_board_tensor(tensor):
     tensor[0, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
 
 
+def make_kth_empty_tensor_in_batch(batch_tensor, kth):
+    batch_tensor[kth].fill(0)
+    # black occupied
+    batch_tensor[kth, 0:INPUT_WIDTH, 0, 0] = 1
+    batch_tensor[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
+    # white occupied
+    batch_tensor[kth, 0, 1:INPUT_WIDTH - 1, 1] = 1
+    batch_tensor[kth, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
+    # empty positions
+    batch_tensor[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
+
+def update_kth_tensor_in_batch(batch_tensor, kth, player, intmove):
+    x, y = intmove // BOARD_SIZE + 1, intmove % BOARD_SIZE + 1
+    batch_tensor[kth, x, y, player] = 1
+    batch_tensor[kth, x, y, 2] = 0
+
 #0 for black win, 1-white win, -1 unsettled.
 def winner(black_group, white_group):
     if (black_group.connected(NORTH_EDGE, SOUTH_EDGE)):

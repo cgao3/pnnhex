@@ -2,7 +2,8 @@
 import tensorflow as tf
 
 class Layer(object):
-    
+    # paddingMethod="SAMVE" then the output is the same size, or VALID uses ordinary padding
+    # reuse_var=True then try to reuse created variables with the same scoped name
     def __init__(self, layer_name, paddingMethod="SAME", reuse_var=False):
         self.layer_name = layer_name
         self.paddingMethod=paddingMethod
@@ -59,8 +60,31 @@ class Layer(object):
         logits = tf.reshape(out, shape=(batch_size, boardsize * boardsize)) + self.bias
         
         return logits
-    
-        
+
+    #output for the value net, one tanh unit fully-connected to the previous layer
+    #two layers, one full-size convolution follows with num_units relu, another convolution follows 1 tanh
+    def value_estimation(self, input_tensor, num_units):
+        with tf.variable_scope(self.layer_name) as sp:
+            if self.reuse_var:
+                sp.reuse_variables()
+            assert(self.paddingMethod=="VALID")
+            out1=self._fully_connected(input_tensor, num_units, "relu")
+            out2=self._fully_connected(out1, 1, "tanh")
+            return tf.squeeze(out2)
+
+    #fully-connected layer can be seen as convolutions: num_units is number of filters,
+    #kernal size is equal to (input_width, input_height)
+    def _fully_connected(self, input_tensor, num_units, unit_type):
+        input_shape=input_tensor.get_shape()
+        weight_shape=(input_shape[1], input_shape[2], input_shape[3], num_units)
+        bias_shape=(num_units,)
+        out=self._conv2d(input_tensor, weight_shape, bias_shape)
+        if unit_type == "tanh":
+            return tf.tanh(out)
+        elif unit_type =="relu":
+            return tf.nn.relu(out)
+
+
 if __name__ == "__main__":
     sess = tf.InteractiveSession()
     conv1 = Layer("layer1")

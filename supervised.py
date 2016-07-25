@@ -11,9 +11,11 @@ from read_data import *
 from six.moves import xrange
 import os
 
-SL_MODEL_PATH="slmodel/model.ckpt"
 TRAIN_DATA_PATH="data/7x7rawgames.dat"
 TEST_DATA_PATH="data/test7x7.dat"
+
+MODELS_DIR="models/"
+SLMODEL_NAME="slmodel.ckpt"
 
 tf.app.flags.DEFINE_boolean("training", True, "False if for evaluation")
 tf.app.flags.DEFINE_integer("num_epoch", 100, "number of epoches")
@@ -28,10 +30,6 @@ class SLNetwork(object):
     def __init__(self, trainDataPath=None, testDataPath=None):
         self.train_data_path=trainDataPath
         self.test_data_path=testDataPath
-        self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        self.train_labels_node = tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
-        self.eval_data_node = tf.placeholder(tf.float32, shape=(EVAL_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        self.eval_label_node = tf.placeholder(tf.int32, shape=(EVAL_BATCH_SIZE,))
 
     def declare_layers(self, num_hidden_layer):
         self.num_hidden_layer=num_hidden_layer
@@ -40,6 +38,7 @@ class SLNetwork(object):
         for i in range(num_hidden_layer):
             self.conv_layer[i] = Layer("conv%d_layer" % i)
 
+    #will reue this model for evaluation
     def model(self, data_node, kernal_size=(3,3), kernal_depth=80):
         output = [None] * self.num_hidden_layer
         weightShape0=kernal_size+(INPUT_DEPTH, kernal_depth)
@@ -55,6 +54,11 @@ class SLNetwork(object):
 
 
     def train(self, num_epochs):
+        self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        self.train_labels_node = tf.placeholder(tf.int32, shape=(BATCH_SIZE,))
+        self.eval_data_node = tf.placeholder(tf.float32, shape=(EVAL_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        self.eval_label_node = tf.placeholder(tf.int32, shape=(EVAL_BATCH_SIZE,))
+
         train_data_util=data_util()
         train_data_util.load_offline_data(self.train_data_path, train_data=True)
         test_data_util=data_util()
@@ -106,11 +110,11 @@ class SLNetwork(object):
                     print("evaluation error rate", error_rate(predict, test_data_util.batch_labels))
                 step += 1
 
-            sl_model_dir=os.path.dirname(SL_MODEL_PATH)
+            sl_model_dir=os.path.dirname(MODELS_DIR)
             if not os.path.exists(sl_model_dir):
                 print("creating dir ", sl_model_dir)
                 os.makedirs(sl_model_dir)
-            saver.save(sess, SL_MODEL_PATH)
+            saver.save(sess, os.path.join(sl_model_dir, SLMODEL_NAME))
 
 def error_rate(predictions, labels):
     return 100.0 - 100.0 * np.sum(np.argmax(predictions, 1) == labels) / predictions.shape[0]

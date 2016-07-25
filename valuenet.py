@@ -4,212 +4,142 @@ from __future__ import division
 from six.moves import xrange
 
 import numpy as np
+
 import tensorflow as tf
-from read_data import INPUT_DEPTH, INPUT_WIDTH, BOARD_SIZE
-from policygradient import PGNetwork
-from supervised import SLNetwork
 
 from unionfind import unionfind
 from game_util import  *
 from layer import Layer
-
-from supervised import SL_MODEL_PATH
-
-PG_MODEL_PATH="opponent_pool/model-10.ckpt"
-
-VNET_BATCH_SIZE=64
-NUM_EXAMPLES=100000
-EXAMPLE_DIR="examples_valuenet/"
-
-class SLNetPlayer(object):
-
-    def __init__(self):
-        self.data_node=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        slnet=SLNetwork("sl_player")
-        with tf.variable_scope("sl_player"):
-            slnet.declare_layers()
-        self.logits_node=slnet.model(self.data_node)
-
-    def open_session(self):
-        sess=tf.Session()
-        self.sess=sess
-        saver=tf.train.Saver()
-        saver.restore(self.sess, SL_MODEL_PATH)
-
-    def close_session(self):
-        self.sess.close()
-
-    def feedforward(self, input_tensor):
-        logits = self.sess.run(self.logits_node, feed_dict={self.data_node: input_tensor})
-        return logits
-
-    def generate_move(self, input_tensor, intgamestate):
-        logits=self.feedforward(input_tensor)
-        return softmax_selection(logits, intgamestate)
-
-class Solver(object):
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def solve(intgamestate):
-        #who is to play is indicated by the gamestate
-        assert(intgamestate[0]!=-1)
-        turn=len(intgamestate)%2
-         
-        pass
-
-        return "label"
+from agents import WrapperAgent
+from game_util import *
+import os
+from supervised import SLNetwork, MODELS_DIR, SLMODEL_NAME
 
 
+VALUE_NET_BATCH_SIZE=64
 
+EVAL_SIZE=100
+VALUE_NET_MODEL_PATH="valuemodel/valuenet_model.ckpt"
 
-class PGNetPlayer(object):
-    def __int__(self):
-        self.data_node = tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        pgnet= PGNetwork("pg_player")
-        self.logits_node=pgnet.model(self.data_node)
-
-
-    def open_session(self):
-        sess=tf.Session()
-        self.sess=sess
-        saver=tf.train.Saver()
-        saver.restore(sess, PG_MODEL_PATH)
-
-    def close_session(self):
-        self.sess.close()
-
-    def feedforward(self, input_tensor):
-        logits=self.sess.run(self.logits_node, feed_dict={self.data_node: input_tensor})
-        return logits
-
-    def generate_move(self, input_tensor, intgamestate):
-        logits = self.feedforward(input_tensor)
-        return softmax_selection(logits, intgamestate)
-
-
-class RandomPlayer(object):
-
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def uniform_random_genmove(intgamestate, boardsize):
-        N=boardsize**2-1
-        empty_positions=[i for i in range(N) if i not in intgamestate]
-        return np.random.choice(empty_positions)
+tf.flags.DEFINE_string("train_example_path", "vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+".dat", "train examples path")
+tf.flags.DEFINE_string("eval_example_path", "vexamples/"+"test_"+repr(BOARD_SIZE+"x"+repr(BOARD_SIZE+".dat")))
 
 class ValueNet(object):
 
-    def __init__(self, U=None):
-        self.U=np.random.randint(0, BOARD_SIZE**2) if U==None else U
+    def __init__(self):
+        self.slnet=SLNetwork()
+        self.slnet.declare_layers(num_hidden_layer=8)
+        self.batch_states=np.ndarray(dtype=np.float32, shape=(VALUE_NET_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        self.batch_label=np.ndarray(dtype=np.float32, shape=(VALUE_NET_BATCH_SIZE,))
 
-    def produce_data(self):
-        self.slnet_player = SLNetPlayer()
-        self.slnet_player.open_session()
-        self.pgnet_player = PGNetPlayer()
-        self.pgnet_player.open_session()
-        self.input_tensor = np.zeros(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        count=0
-        fout=open(EXAMPLE_DIR+"exam.dat","w+")
-        while count < NUM_EXAMPLES:
-            raw_game, label=self.generate_one_example()
-            if (raw_game, label):
-                count += 1
-                for m in raw_game:
-                    fout.write(m+" ")
-                fout.write("\n"+label+"\n")
-        fout.close()
+        self.eval_batch_states = np.ndarray(dtype=np.float32, shape=(EVAL_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        self.eval_batch_label = np.ndarray(dtype=np.float32, shape=(EVAL_SIZE,))
 
-        self.slnet_player.close_session()
-        self.pgnet_player.close_session()
+    def train(self, train_states_data_path, eval_states_data_path):
+        train_raw_states=[]
+        with open(train_states_data_path, "r") as f:
+            for line in f:
+                train_raw_states.append(line.split())
 
-    def generate_one_example(self):
-        U = np.random.randint(0, BOARD_SIZE ** 2)
-        gamestate = []
-        black_groups=unionfind()
-        white_groups=unionfind()
-        turn=0
-        gamestatus=-1
-        make_empty_board_tensor(self.input_tensor)
+        eval_raw_states=[]
+        with open(eval_states_data_path, "r") as f:
+            for line in f:
+                eval_raw_states.append(line.split())
+        print("train and eval data loaded..")
 
-        #SL play to step U-1
-        for i in range(0, U):
-            intmove = self.slnet_player.generate_move(self.input_tensor, gamestate)
-            update_tensor(self.input_tensor, turn, intmove)
-            black_groups, white_groups=update_unionfind(intmove, turn, gamestate, black_groups, white_groups)
-            gamestatus=winner(black_groups, white_groups)
-            turn = (turn +1)%2
-            gamestate.append(intmove)
-            if (gamestatus == 0 or gamestate == 1): return
+        num_epochs=10
+        epoch_count=0
+        offset=0
 
-        #Random play at step U
-        int_random_move=RandomPlayer.uniform_random_genmove(gamestate, BOARD_SIZE)
-        update_tensor(self.input_tensor, turn, int_random_move)
-        black_groups, white_groups=update_unionfind(int_random_move, turn, gamestate, black_groups, white_groups)
-        gamestatus=winner(black_groups,white_groups)
-        gamestate.append(int_random_move)
-        example_state=list(gamestate)
-        example_state_player=turn
-        turn = (turn+1)%2
-        if gamestatus == 0 or gamestatus == 1: return
+        batch_states_node=tf.placeholder(dtype=tf.float32, shape=(VALUE_NET_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        batch_targets_node=tf.placeholder(dtype=tf.float32, shape=(VALUE_NET_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
 
-        #PG play from U+1 till game ends
-        while gamestatus==-1:
-            intmove=self.pgnet_player.generate_move(self.input_tensor, gamestate)
-            update_tensor(self.input_tensor, turn, intmove)
-            black_groups,white_groups=update_unionfind(intmove, turn, gamestate, black_groups,white_groups)
-            gamestatus=winner(black_groups,white_groups)
-            turn = (turn + 1)%2
-            gamestate.append(intmove)
-        R = 1.0 if gamestatus == example_state_player else -1.0
+        eval_states_node = np.ndarray(dtype=np.float32,shape=(EVAL_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        eval_targets_node = np.ndarray(dtype=np.float32, shape=(EVAL_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
 
-        return self.build_example(example_state, R)
+        output=self.model(batch_states_node)
+        rmse = tf.sqrt(tf.reduce_mean(tf.square(tf.sub(output, batch_targets_node))))
+        opt_op=tf.train.RMSPropOptimizer().minimize(rmse)
 
-    #label is win or loss, +1 or -1, OR modified game reward
-    def build_example(self, intgamestate, label):
-        raw_game=[]
-        for m in intgamestate:
-            rawmove=intmove_to_raw(m)
-            raw_game.append(rawmove)
-        return (raw_game, label)
+        tf.get_variable_scope().reuse_variables()
+        eval_output = self.model(eval_states_node)
+        eval_rmse=tf.sqrt(tf.reduce_mean(tf.square(tf.sub(eval_output, eval_targets_node))))
+        eval_opt_op=tf.train.RMSPropOptimizer().minimize(eval_rmse)
 
-    def regression(self):
+        sess=tf.Session()
+        sess.run(tf.initialize_all_variables())
+
+        var_dict = {self.slnet.input_layer.weight.op.name: self.slnet.input_layer.weight,
+                     self.slnet.input_layer.bias.op.name: self.slnet.input_layer.bias}
+
+        for i in xrange(self.slnet.num_hidden_layer):
+            var_dict[self.slnet.conv_layer[i].weight.op.name] = self.slnet.conv_layer[i].weight
+            var_dict[self.slnet.conv_layer[i].bias.op.name] = self.slnet.conv_layer[i].bias
+        saver = tf.train.Saver(var_list=var_dict)
+        sl_model = os.path.join(MODELS_DIR, SLMODEL_NAME)
+        #restore variables from SL model
+        saver.restore(sess, sl_model)
+
+        while epoch_count < num_epochs:
+            offset, next_epoch=self.prepare_batch(train_raw_states, offset, self.batch_states, self.batch_label,
+                                                  batchsize=VALUE_NET_BATCH_SIZE)
+            rmse_=sess.run(opt_op, feed_dict={batch_states_node:self.batch_states,
+                                              batch_targets_node:self.batch_label})
+            print("epoch", epoch_count, "RMSE ", rmse_)
+
+            if (epoch_count+1) % 10 == 0:
+                self.prepare_batch(eval_raw_states,0,self.eval_batch_states, self.eval_batch_label, EVAL_SIZE)
+                eval_rmse_ = sess.run(eval_opt_op, feed_dict=
+                {eval_states_node: self.eval_batch_states, eval_targets_node:self.eval_batch_label})
+                print("eval RMSE:", eval_rmse_)
+
+            if next_epoch:
+                epoch_count += 1
+        if not os.path.exists(VALUE_NET_MODEL_PATH):
+            print("creating valuenet model directory")
+            os.mkdir(os.path.dirname(VALUE_NET_MODEL_PATH))
         
-        pass
+        saver.save(VALUE_NET_MODEL_PATH)
+        sess.close()
 
-    # the same structure as supervised network
-    def model(self):
-        data_node=tf.placeholder(dtype=tf.float32, shape=(VNET_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        num_hidden_layer=8
-        self.num_hidden_layer = num_hidden_layer
-        self.input_layer = Layer("input_layer", paddingMethod="VALID")
-        self.conv_layer = [None] * num_hidden_layer
+    #the ith state, build kth batch tensor label
+    def build_example(self, raw_states, ith, batch_tensor, batch_label, kth):
+        batch_label[kth]=raw_states[ith][-1]
+        make_kth_empty_tensor_in_batch(batch_tensor=batch_tensor, kth=kth)
+        turn=0
+        for j in range(len(raw_states[ith])-1):
+            move=raw_states[ith][j]
+            intmove=raw_move_to_int(move)
+            update_kth_tensor_in_batch(batch_tensor=batch_tensor,kth=kth,player=turn,intmove=intmove)
+            turn = (turn+1)%2
 
-        for i in range(num_hidden_layer):
-            self.conv_layer[i] = Layer("conv%d_layer" % i)
+    def prepare_batch(self, raw_states, offset, batch_tensor, batch_label, batchsize):
+        count=0
+        new_offset=offset
+        next_epoch=False
+        while count<batchsize:
+            for i in xrange(offset, len(raw_states)):
+                self.build_example(raw_states, i,batch_tensor, batch_label, count)
+                count += 1
+                if count >= batchsize:
+                    new_offset=i+1
+                    break
+            if count < batchsize:
+                offset=0
+                next_epoch=True
+        return new_offset, next_epoch
 
-        kernal_size=(3, 3)
-        kernal_depth=80
-
-        output = [None] * self.num_hidden_layer
-        weightShape0 = kernal_size + (INPUT_DEPTH, kernal_depth)
-        output[0] = self.input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
-
-        weightShape = kernal_size + (kernal_depth, kernal_depth)
-        for i in range(self.num_hidden_layer - 1):
-            output[i + 1] = self.conv_layer[i].convolve(output[i], weight_shape=weightShape,
-                                                        bias_shape=(kernal_depth,))
-
-        logits = self.conv_layer[self.num_hidden_layer - 1].one_filter_out(output[self.num_hidden_layer - 1],
-                                                                               BOARD_SIZE)
-        return logits
-
-
+    def model(self, data_node):
+        logits = self.slnet.model(data_node)
+        last_layer=Layer("value_net_output_layer", paddingMethod="SAME", reuse_var=False)
+        value=last_layer.value_estimation(logits, 80)
+        return value
 
 def main(argv=None):
     vnet=ValueNet()
+    train_path=tf.flags.FLAGS.train_example_path
+    test_path=tf.flags.FLAGS.test_example_path
+    vnet.train(train_path, test_path)
 
 if __name__ == "__main__":
     tf.app.run()

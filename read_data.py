@@ -7,7 +7,7 @@ from six.moves import xrange
 
 import numpy as np
 
-BOARD_SIZE = 13
+BOARD_SIZE = 7
 BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 3

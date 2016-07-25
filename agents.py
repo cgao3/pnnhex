@@ -6,7 +6,7 @@ import tensorflow as tf
 import numpy as np
 from game_util import *
 from unionfind import *
-from policygradient import PGNetwork
+from supervised import SLNetwork
 import threading
 from program import Program
 
@@ -72,8 +72,9 @@ class NNAgent(object):
     def load_model(self):
         self.data_node = tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         self.sess=tf.Session()
-        self.network = PGNetwork("neural net agent")
-        self.logit=self.network.model(self.data_node)
+        self.net = SLNetwork()
+        self.net.declare_layers(num_hidden_layer=8)
+        self.logit=self.net.model(self.data_node)
         saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)
 

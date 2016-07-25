@@ -19,10 +19,9 @@ from game_util import *
 PG_GAME_BATCH_SIZE=128
 PG_STATE_BATCH_SIZE=64
 
-PG_MODEL_DIR="pgmodels/"
-MODEL_NAME="model.ckpt"
+PGMODEL_NAME="pgmodel.ckpt"
 
-from supervised import SL_MODEL_PATH
+from supervised import MODELS_DIR, SLMODEL_NAME, SLNetwork
 
 MAX_NUM_MODEL_TO_KEEP=100
 
@@ -36,37 +35,12 @@ FLAGS=tf.flags.FLAGS
 
 class PGNetwork(object):
 
-    def __init__(self, name):
+    def __init__(self):
         self.board_tensor = np.zeros(shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.float32)
-
-        self.declare_layers(num_hidden_layer=8)
-
-    #the same structure as supervised network
-    def declare_layers(self, num_hidden_layer):
-        self.num_hidden_layer = num_hidden_layer
-        self.input_layer = Layer("input_layer", paddingMethod="VALID")
-        self.conv_layer = [None] * num_hidden_layer
-
-        for i in range(num_hidden_layer):
-            self.conv_layer[i] = Layer("conv%d_layer" % i)
-
-    def model(self, data_node, kernal_size=(3, 3), kernal_depth=80):
-        output = [None] * self.num_hidden_layer
-        weightShape0 = kernal_size + (INPUT_DEPTH, kernal_depth)
-        output[0] = self.input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
-
-        weightShape = kernal_size + (kernal_depth, kernal_depth)
-        for i in range(self.num_hidden_layer - 1):
-            output[i + 1] = self.conv_layer[i].convolve(output[i], weight_shape=weightShape, bias_shape=(kernal_depth,))
-
-        logits = self.conv_layer[self.num_hidden_layer - 1].one_filter_out(output[self.num_hidden_layer - 1], BOARD_SIZE)
-        tf.get_variable_scope().reuse_variables()
-        #self._init=tf.initialize_all_variables()
-        return logits
 
     def select_model(self, models_dir):
         #list all models, randomly select one
-        l2=[f for f in os.listdir(models_dir) if f.startswith(MODEL_NAME) and not f.endswith(".meta")]
+        l2=[f for f in os.listdir(models_dir) if f.startswith(PGMODEL_NAME) and not f.endswith(".meta")]
         return os.path.join(models_dir, np.random.choice(l2))
 
     def play_one_batch_games(self, sess, otherSess, thisLogit, otherLogit, data_node, batch_game_size, batch_reward):
@@ -104,23 +78,38 @@ class PGNetwork(object):
             #print("steps ", count, "gamestatus ", gamestatus)
             R = 1.0/count if gamestatus == this_player else -1.0/count
             games.append([-1]+moves) #first hypothesisted action is -1
-            batch_reward[ind]=R*count
+            batch_reward[ind]=R
 
         print("this player win: ", this_win_count, "other player win: ", other_win_count)
         return (games, this_win_count, other_win_count)
 
     def selfplay(self):
-        data=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        otherNeuroPlayer = PGNetwork("other_player")
-        otherSess = tf.Session()
-        otherLogit=otherNeuroPlayer.model(data)
-        saver=tf.train.Saver(max_to_keep=MAX_NUM_MODEL_TO_KEEP)
-        sl_model=SL_MODEL_PATH
-        saver.restore(otherSess, sl_model)
+        data_node=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        slnet=SLNetwork()
+        slnet.declare_layers(num_hidden_layer=8)
 
-        sess=tf.Session()
-        thisLogit=self.model(data)
+        this_logits=slnet.model(data_node)
+        saver=tf.train.Saver(max_to_keep=MAX_NUM_MODEL_TO_KEEP)
+        print(this_logits.name)
+        sl_model = os.path.join(MODELS_DIR, SLMODEL_NAME)
+        sess = tf.Session()
         saver.restore(sess, sl_model)
+
+        with tf.variable_scope("other_nn_player"):
+            slnet2=SLNetwork()
+            slnet2.declare_layers(num_hidden_layer=8)
+            other_logits=slnet2.model(data_node)
+            #use non-scoped name to restore those variables
+            var_dict2 = {slnet.input_layer.weight.op.name: slnet2.input_layer.weight,
+                    slnet.input_layer.bias.op.name: slnet2.input_layer.bias}
+            for i in xrange(slnet2.num_hidden_layer):
+                var_dict2[slnet.conv_layer[i].weight.op.name] = slnet2.conv_layer[i].weight
+                var_dict2[slnet.conv_layer[i].bias.op.name] = slnet2.conv_layer[i].bias
+            saver2 = tf.train.Saver(var_list=var_dict2)
+
+        otherSess = tf.Session()
+        saver2.restore(otherSess, sl_model)
+
         batch_game_size=128
         opt = tf.train.GradientDescentOptimizer(FLAGS.alpha/batch_game_size)
         #opt =tf.train.AdamOptimizer()
@@ -130,13 +119,13 @@ class PGNetwork(object):
         batch_label_node = tf.placeholder(shape=(PG_STATE_BATCH_SIZE,), dtype=np.int32)
 
         batch_rewards = np.ndarray(dtype=np.float32, shape=(PG_STATE_BATCH_SIZE,))
-        batch_data = np.ndarray(dtype=np.float32,
-                                         shape=(PG_STATE_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        batch_data = np.ndarray(dtype=np.float32, shape=(PG_STATE_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         batch_labels = np.ndarray(shape=(PG_STATE_BATCH_SIZE,), dtype=np.int32)
 
         game_rewards=np.ndarray(shape=(batch_game_size,), dtype=np.float32)
 
-        logit = self.model(batch_data_node)
+        tf.get_variable_scope().reuse_variables()
+        logit = slnet.model(batch_data_node)
         entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logit, batch_label_node)
         loss = tf.reduce_mean(tf.mul(batch_reward_node, entropy))
         opt_op=opt.minimize(loss)
@@ -146,21 +135,21 @@ class PGNetwork(object):
         ite=0
         g_step=0
 
-        if not os.path.exists(PG_MODEL_DIR):
-            os.makedirs(PG_MODEL_DIR)
-            print("creating pg model dir")
+        if not os.path.exists(MODELS_DIR):
+            os.makedirs(MODELS_DIR)
+            print("no SL model? creating pg model dir")
         else:
-            for f in os.listdir(PG_MODEL_DIR):
-                if f.startswith(MODEL_NAME):
+            for f in os.listdir(MODELS_DIR):
+                if f.startswith(PGMODEL_NAME):
                     try:
-                        os.remove(os.path.join(PG_MODEL_DIR,f))
+                        os.remove(os.path.join(MODELS_DIR,f))
                     except OSError as e:
                         print(e.strerror)
             print("removing old models in pg dir")
 
         while ite < FLAGS.max_iterations:
             start_batch_time = time.time()
-            games,_tmp1,_tmp2=self.play_one_batch_games(sess,otherSess, thisLogit,otherLogit,data,batch_game_size, game_rewards)
+            games,_tmp1,_tmp2=self.play_one_batch_games(sess,otherSess, this_logits,other_logits,data_node,batch_game_size, game_rewards)
             win1 += _tmp1
             win2 += _tmp2
             data_tool=data_util(games, PG_STATE_BATCH_SIZE, batch_data, batch_labels)
@@ -197,9 +186,9 @@ class PGNetwork(object):
             print("time cost for one batch of %d games"%PG_GAME_BATCH_SIZE, time.time()-start_batch_time)
 
             if ite > 0 and ite % FLAGS.frequency==0:
-                saver.save(sess, os.path.join(PG_MODEL_DIR, MODEL_NAME), global_step=g_step)
-                pg_model=self.select_model(PG_MODEL_DIR)
-                saver.restore(otherSess, pg_model)
+                saver.save(sess, os.path.join(MODELS_DIR, PGMODEL_NAME), global_step=g_step)
+                pg_model=self.select_model(MODELS_DIR)
+                saver2.restore(otherSess, pg_model)
                 g_step +=1
                 print("Replce opponenet with new model, ", g_step)
                 print(pg_model)
@@ -208,18 +197,17 @@ class PGNetwork(object):
         otherSess.close()
         sess.close()
 
-    def test_play(self):
+    def test_play(self, batch_game_size=128):
         data = tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        otherNeuroPlayer = PGNetwork("other_player")
         otherSess = tf.Session()
-        otherLogit = otherNeuroPlayer.model(data)
+        otherLogit = self.model(data)
         saver = tf.train.Saver()
-        saver.restore(otherSess, SL_MODEL_PATH)
+        saver.restore(otherSess, os.path.join(MODELS_DIR, SLMODEL_NAME))
 
+        tf.get_variable_scope().reuse_variables()
         sess = tf.Session()
         thisLogit = self.model(data)
-        saver.restore(sess, SL_MODEL_PATH)
-        batch_game_size = 128
+        saver.restore(sess, os.path.join(MODELS_DIR, SLMODEL_NAME))
 
         game_rewards = np.ndarray(shape=(batch_game_size,), dtype=np.float32)
         this_win=0
@@ -232,7 +220,7 @@ class PGNetwork(object):
         print("This player wins ", this_win, "that player wins", other_win)
 
 def main(argv=None):
-    pg=PGNetwork("pg training")
+    pg=PGNetwork()
     pg.selfplay()
 
 if __name__ == "__main__":

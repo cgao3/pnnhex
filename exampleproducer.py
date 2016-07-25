@@ -106,16 +106,16 @@ class ExampleProducer(object):
 
     # label is win or loss, +1 or -1, OR modified game reward
     def build_example(self, intgamestate):
-        raw_game = []
+        raw_state = []
         for m in intgamestate:
             rawmove = intmove_to_raw(m)
-            raw_game.append(rawmove)
-        return (raw_game)
+            raw_state.append(rawmove)
+        return (raw_state)
 
 def main(argv=None):
     exe1 = "/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"
     exe2 = "/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"
-    eproducer=ExampleProducer(exe1, exe2, 1000)
+    eproducer=ExampleProducer(exe1, exe2, 100000)
     eproducer.produce_data()
 
 if __name__ == "__main__":

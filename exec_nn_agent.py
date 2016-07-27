@@ -5,23 +5,18 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 from gtpinterface import GTPInterface
-from supervised import MODELS_DIR
 import os
 import sys
 from agents import NNAgent
+import argparse
 
-def main():
+def main(argv=None):
     """
     Executable of the neural net player..
     use the latest model saved by policy gradient reinforcement learning
     """
 
-    check_point=os.path.join(".", MODELS_DIR, "checkpoint")
-    with open(check_point, "r") as f:
-        line=f.readline()
-    model_name=line.split()[1][1:-1]
-    model_path=os.path.join(".", MODELS_DIR, model_name)
-    agent=NNAgent(model_path, name=model_name)
+    agent=NNAgent(argv.model_path, name=argv.model_path, is_value_net=argv.value_net)
     interface=GTPInterface(agent)
     while True:
         command=raw_input()
@@ -30,4 +25,9 @@ def main():
         sys.stdout.flush()
 
 if __name__ == "__main__":
-    main()
+    parser=argparse.ArgumentParser(description='test')
+    parser.add_argument('model_path', type=str, help="the path of the model file")
+    parser.add_argument('--value_net', action='store_true', help="value_net model?")
+    parser.add_argument('--verbose', action='store_true', help='verbose?')
+    args=parser.parse_args()
+    main(args)

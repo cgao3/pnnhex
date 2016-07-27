@@ -9,12 +9,17 @@ import tensorflow as tf
 
 from unionfind import unionfind
 from game_util import *
+from agents import WrapperAgent
 from layer import Layer
 from agents import WrapperAgent
 import os
 import sys
 
 EXAMPLES_PATH = "vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+"examples.dat"
+
+tf.app.flags.DEFINE_string("exe1_path", "/home/cgao3/benzene/src/wolve/wolve", "exe for the fast player")
+tf.app.flags.DEFINE_string("exe2_path", "/home/cgao3/benzene/src/wolve/wolve", "exe for the strong player")
+FLAGS=tf.app.flags.FLAGS
 
 class RandomPlayer(object):
     def __init__(self):
@@ -31,9 +36,9 @@ class ExampleProducer(object):
         self.num_examples=num_examples
         self.set_players(exe_path1, exe_path2)
 
-    def set_players(self, exe_path1, exe_path2):
-        self.fast_player = WrapperAgent(exe_path1)
-        self.strong_player = WrapperAgent(exe_path2)
+    def set_players(self, exe_path1, exe_path2, verbose=False):
+        self.fast_player = WrapperAgent(exe_path1, verbose)
+        self.strong_player = WrapperAgent(exe_path2, verbose)
 
     def produce_data(self):
         if not os.path.exists(os.path.dirname(EXAMPLES_PATH)):
@@ -66,7 +71,7 @@ class ExampleProducer(object):
         black_groups = unionfind()
         white_groups = unionfind()
         turn = 0
-        status = -1
+
         # Fast Player play to U
         for i in range(0, U):
             move = self.fast_player.genmove_black() if turn == 0 else self.fast_player.genmove_white()
@@ -113,8 +118,8 @@ class ExampleProducer(object):
         return (raw_state)
 
 def main(argv=None):
-    exe1 = "/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"
-    exe2 = "/home/cgao3/benzene/src/wolve/wolve 2>/dev/null"
+    exe1 = FLAGS.exe1_path+" 2>/dev/null"
+    exe2 = FLAGS.exe2_path+" 2>/dev/null"
     eproducer=ExampleProducer(exe1, exe2, 100000)
     eproducer.produce_data()
 

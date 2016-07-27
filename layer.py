@@ -37,14 +37,14 @@ class Layer(object):
             return self._conv2d(input_tensor, weight_shape, bias_shape)
 
     #logits for move prediction
-    def move_logits(self, input_tensor, boardsize):
+    def move_logits(self, input_tensor, boardsize, value_net=False):
         with tf.variable_scope(self.layer_name) as sp:
             if self.reuse_var:
                 sp.reuse_variables()
-            return self._one_filter_out(input_tensor, boardsize)
+            return self._one_filter_out(input_tensor, boardsize, value_net)
 
     # input batchsize x BOARDSIZE x BOARDSIZE x DEPTH
-    def _one_filter_out(self, input_tensor, boardsize):
+    def _one_filter_out(self, input_tensor, boardsize, value_net=False):
         input_shape = input_tensor.get_shape()
         batch_size = input_shape[0].value
         assert(input_shape[1] == boardsize)
@@ -57,8 +57,10 @@ class Layer(object):
         self.bias = tf.get_variable("position_bias", bias_shape, initializer=tf.constant_initializer(0.0))
         
         out = tf.nn.conv2d(input_tensor, self.weight, strides=[1, 1, 1, 1], padding="SAME")
+
+        if value_net: return out
+
         logits = tf.reshape(out, shape=(batch_size, boardsize * boardsize)) + self.bias
-        
         return logits
 
     #output for the value net, one tanh unit fully-connected to the previous layer
@@ -69,6 +71,7 @@ class Layer(object):
                 sp.reuse_variables()
             assert(self.paddingMethod=="VALID")
             out1=self._fully_connected(input_tensor, num_units, "relu")
+        with tf.variable_scope(self.layer_name+"_2"):
             out2=self._fully_connected(out1, 1, "tanh")
             return tf.squeeze(out2)
 
@@ -76,6 +79,7 @@ class Layer(object):
     #kernal size is equal to (input_width, input_height)
     def _fully_connected(self, input_tensor, num_units, unit_type):
         input_shape=input_tensor.get_shape()
+        print("input_shape", input_shape)
         weight_shape=(input_shape[1], input_shape[2], input_shape[3], num_units)
         bias_shape=(num_units,)
         out=self._conv2d(input_tensor, weight_shape, bias_shape)

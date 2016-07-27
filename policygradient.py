@@ -107,12 +107,10 @@ class PGNetwork(object):
                 var_dict2[slnet.conv_layer[i].bias.op.name] = slnet2.conv_layer[i].bias
             saver2 = tf.train.Saver(var_list=var_dict2)
 
-        otherSess = tf.Session()
-        saver2.restore(otherSess, sl_model)
+            otherSess = tf.Session()
+            saver2.restore(otherSess, sl_model)
 
         batch_game_size=128
-        opt = tf.train.GradientDescentOptimizer(FLAGS.alpha/batch_game_size)
-        #opt =tf.train.AdamOptimizer()
 
         batch_reward_node = tf.placeholder(dtype=np.float32, shape=(PG_STATE_BATCH_SIZE,))
         batch_data_node = tf.placeholder(dtype=np.float32, shape=(PG_STATE_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
@@ -128,6 +126,7 @@ class PGNetwork(object):
         logit = slnet.model(batch_data_node)
         entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logit, batch_label_node)
         loss = tf.reduce_mean(tf.mul(batch_reward_node, entropy))
+        opt = tf.train.GradientDescentOptimizer(FLAGS.alpha / batch_game_size)
         opt_op=opt.minimize(loss)
 
         win1=0
@@ -184,8 +183,8 @@ class PGNetwork(object):
                 sess.run(opt_op, feed_dict={batch_data_node:batch_data, batch_label_node:batch_labels, batch_reward_node: batch_rewards})
 
             print("time cost for one batch of %d games"%PG_GAME_BATCH_SIZE, time.time()-start_batch_time)
-
-            if ite > 0 and ite % FLAGS.frequency==0:
+            ite += 1
+            if ite % FLAGS.frequency==0:
                 saver.save(sess, os.path.join(MODELS_DIR, PGMODEL_NAME), global_step=g_step)
                 pg_model=self.select_model(MODELS_DIR)
                 saver2.restore(otherSess, pg_model)

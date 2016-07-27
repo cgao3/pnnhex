@@ -5,16 +5,15 @@ from __future__ import absolute_import
 import tensorflow as tf
 import numpy as np
 from game_util import *
-from unionfind import *
 from supervised import SLNetwork
 import threading
 from program import Program
 
 class WrapperAgent(object):
 
-    def __init__(self, executable):
+    def __init__(self, executable, verbose=False):
         self.executable=executable
-        self.program=Program(self.executable, True)
+        self.program=Program(self.executable, verbose)
         self.name=self.program.sendCommand("name").strip()
         self.lock=threading.Lock()
 
@@ -28,15 +27,6 @@ class WrapperAgent(object):
         self.program.terminate()
         self.program=Program(self.executable, True)
         self.lock=threading.Lock()
-
-    def sendStates(self, intgamestate):
-        turn=len(intgamestate)%2
-        for m in intgamestate:
-            raw_m=intmove_to_raw(m)
-            if turn ==0:
-                self.play_black(raw_m)
-            else: self.play_white(raw_m)
-            turn=(turn+1)%2
 
     def play_black(self, move):
         self.sendCommand("play black "+move)
@@ -58,9 +48,10 @@ class WrapperAgent(object):
 
 class NNAgent(object):
 
-    def __init__(self, model_location, name):
+    def __init__(self, model_location, name, is_value_net=False):
         self.model_path=model_location
         self.agent_name=name
+        self.is_value_net=is_value_net
         self.initialize_game()
 
     def initialize_game(self):
@@ -72,9 +63,12 @@ class NNAgent(object):
     def load_model(self):
         self.data_node = tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         self.sess=tf.Session()
-        self.net = SLNetwork()
-        self.net.declare_layers(num_hidden_layer=8)
-        self.logit=self.net.model(self.data_node)
+        if self.is_value_net :
+            pass
+        else:
+            self.net = SLNetwork()
+            self.net.declare_layers(num_hidden_layer=8)
+            self.logit=self.net.model(self.data_node)
         saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)
 
@@ -88,10 +82,13 @@ class NNAgent(object):
         self.game_state.append(intmove)
 
     def generate_move(self):
-        logits=self.sess.run(self.logit, feed_dict={self.data_node:self.boardtensor})
-        intmove=softmax_selection(logits, self.game_state)
-        #intmove=max_selection(logits, self.game_state)
-        raw_move=intmove_to_raw(intmove)
+        if self.is_value_net :
+            pass
+        else:
+            logits=self.sess.run(self.logit, feed_dict={self.data_node:self.boardtensor})
+            intmove=softmax_selection(logits, self.game_state)
+            #intmove=max_selection(logits, self.game_state)
+            raw_move=intmove_to_raw(intmove)
         assert(ord('a') <= ord(raw_move[0]) <= ord('z') and 0<= int(raw_move[1:]) <BOARD_SIZE**2)
         return raw_move
 

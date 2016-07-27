@@ -39,7 +39,7 @@ class SLNetwork(object):
             self.conv_layer[i] = Layer("conv%d_layer" % i)
 
     #will reue this model for evaluation
-    def model(self, data_node, kernal_size=(3,3), kernal_depth=80):
+    def model(self, data_node, kernal_size=(3,3), kernal_depth=80, value_net=False):
         output = [None] * self.num_hidden_layer
         weightShape0=kernal_size+(INPUT_DEPTH, kernal_depth)
         output[0]=self.input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))

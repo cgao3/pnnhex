@@ -9,8 +9,8 @@ import argparse
 from unionfind import unionfind
 from agents import WrapperAgent
 
-EXE_NN_AGENT_NAME="./exec_nn_agent.py"
-EXE_HEX_PATH="/home/cgao3/benzene/src/wolve/wolve"
+EXE_NN_AGENT_NAME="./exec_nn_agent.py "
+EXE_HEX_PATH="/home/cgao3/benzene/src/wolve/wolve "
 
 def run_single_match(black_agent, white_agent, verbose=False):
     game=[]
@@ -48,18 +48,20 @@ def run_single_match(black_agent, white_agent, verbose=False):
     return gamestatus
 
 if __name__ == "__main__":
-    #parser=argparse.ArgumentParser(description="tournament between agents")
+    parser=argparse.ArgumentParser(description="tournament between agents")
     #parser.add_argument("num_games", type=int, help="num of paired games playing")
-    #parser.add_argument("--verbose","-v",action="stroe_consnat", const=True, default=False, help="verbose or not")
+    parser.add_argument("model_path", help="where the model locates", type=str)
+    parser.add_argument("--value_net", help="whether it is valuenet model", action="store_true", default=False)
+    parser.add_argument("--verbose", help="verbose?", action="store_true", default=False)
 
-    #args=parser.parse_args()
+    args=parser.parse_args()
     num_games=1000
     think_time=1
-    net_exe=EXE_NN_AGENT_NAME+" 2>/dev/null"
+    net_exe=EXE_NN_AGENT_NAME + args.model_path +" 2>/dev/null"
     wolve_exe=EXE_HEX_PATH+" 2>/dev/null"
-    wolve=WrapperAgent(wolve_exe)
-    net=WrapperAgent(net_exe)
-    #net2=wrapper_agent(net_exe)
+    wolve=WrapperAgent(wolve_exe, True)
+    net=WrapperAgent(net_exe, True)
+
     wolve.sendCommand("param_wolve max_time "+repr(think_time))
     white_win_count=0
     black_win_count=0

@@ -66,6 +66,7 @@ test(5,z=15)
 #          ConvLayerSpec(num_filters=1, filter_shape=(1, 1), pad='same')]
 #
 #data_node is a tf.plceholder with the shape (batch_size, width, height, depth)
+#each convolve follows a ReLu
 from layer import Layer
 def model(self, data_node):
     nd_layers = 7
@@ -74,9 +75,8 @@ def model(self, data_node):
     for i in range(nd_layers):
         self.conv_layer[i] = Layer("conv%d_layer" % i)
 
-    input_depth=12
-    weightShape0 = (5,5) + (input_depth, 64)
-    output = input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(64,))
+    input_depth=data_node.get_shape()[3].value
+    output = input_layer.convolve(data_node, weight_shape=(5,5,input_depth,64), bias_shape=(64,))
     output = conv_layer[0].convolve(output, weight_shape=(3,3,64,64), bias_shape=(64,))
     output = conv_layer[1].convolve(output, weight_shape=(3,3,64,64), bias_shape=(64,))
     output = conv_layer[2].convolve(output, weight_shape=(3,3,64,32), bias_shape=(32,))

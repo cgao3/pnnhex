@@ -77,7 +77,7 @@ class ValueNet(object):
         sl_model = os.path.join(MODELS_DIR, SLMODEL_NAME)
         #restore variables from SL model
         saver.restore(sess, sl_model)
-
+        gl_step=0
         while epoch_count < num_epochs:
             offset, next_epoch=self.prepare_batch(train_raw_states, offset, self.batch_states, self.batch_label,
                                                   batchsize=VALUE_NET_BATCH_SIZE)
@@ -92,6 +92,8 @@ class ValueNet(object):
                     eval_rmse_ = sess.run(eval_rmse, feed_dict={eval_states_node: self.eval_batch_states,
                                                                 eval_targets_node: self.eval_batch_label})
                     print("eval RMSE:", eval_rmse_)
+                    saver.save(sess, VALUE_NET_MODEL_PATH, global_step=gl_step)
+                    gl_step += 1
         if not os.path.exists(VALUE_NET_MODEL_PATH):
             print("creating valuenet model directory")
             os.mkdir(os.path.dirname(VALUE_NET_MODEL_PATH))

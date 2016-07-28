@@ -40,13 +40,16 @@ class ExampleProducer(object):
         self.fast_player = WrapperAgent(exe_path1, verbose)
         self.strong_player = WrapperAgent(exe_path2, verbose)
 
-    def produce_data(self):
+    def produce_data(self, solving=False):
         if not os.path.exists(os.path.dirname(EXAMPLES_PATH)):
             os.makedirs(os.path.dirname(EXAMPLES_PATH))
         count = 0
         fout = open(EXAMPLES_PATH, "w+")
         while count < self.num_examples:
-            example = self.generate_one_example(True, 0.5, 1.0)
+            if solving:
+                pass
+            else:
+                example = self.generate_one_example(True, 0.5, 1.0)
             if example:
                 raw_game, label=example
                 count += 1
@@ -54,6 +57,29 @@ class ExampleProducer(object):
                     fout.write(m + " ")
                 fout.write(repr(label) + "\n")
         fout.close()
+
+    def generate_one_example_by_solving(self):
+        N=BOARD_SIZE*BOARD_SIZE/2
+        U=np.random.randint(0,N)
+        S=[i for i in xrange(N)]
+        gamestate=[]
+        for i in xrange(U):
+            e=np.random.choice(S)
+            S.remove(e)
+            gamestate.append(e)
+        self.strong_player.set_board_size(BOARD_SIZE)
+        turn=0
+        for i in gamestate:
+            move=intmove_to_raw(i)
+            self.strong_player.play_black(move) if turn ==0 else self.strong_player.play_white(move)
+            turn = (turn+1)%2
+        toplay="black" if turn==0 else "white"
+
+        ans=self.strong_player.sendCommand("dfpn-solve-state "+toplay)
+        if ans==toplay:
+            return self.build_example(gamestate), 1.0
+        else:
+            return self.build_example(gamestate), -1.0
 
     def generate_one_example(self, indicate_boardsize=False, time_limit1=None, time_limit2=None):
         if indicate_boardsize:

@@ -52,3 +52,40 @@ def test(x, y=3, z=4):
     print(x+y+z)
 
 test(5,z=15)
+
+
+# Andrew's model for alfuego
+#
+#layers = [ConvLayerSpec(num_filters=64, filter_shape=(5, 5)),
+#          ConvLayerSpec(num_filters=64, filter_shape=(3, 3), pad='same'),
+#          ConvLayerSpec(num_filters=64, filter_shape=(3, 3), pad='same'),
+#          ConvLayerSpec(num_filters=32, filter_shape=(3, 3), pad='same'),
+#          ConvLayerSpec(num_filters=32, filter_shape=(3, 3), pad='same'),
+#          ConvLayerSpec(num_filters=16, filter_shape=(3, 3), pad='same'),
+#          ConvLayerSpec(num_filters=16, filter_shape=(3, 3), pad='same'),
+#          ConvLayerSpec(num_filters=1, filter_shape=(1, 1), pad='same')]
+#
+#data_node is a tf.plceholder with the shape (batch_size, width, height, depth)
+from layer import Layer
+def model(self, data_node):
+    nd_layers = 7
+    input_layer = Layer("input_layer", paddingMethod="VALID")
+    conv_layer = [None] * nd_layers
+    for i in range(nd_layers):
+        self.conv_layer[i] = Layer("conv%d_layer" % i)
+
+    input_depth=12
+    weightShape0 = (5,5) + (input_depth, 64)
+    output = input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(64,))
+    output = conv_layer[0].convolve(output, weight_shape=(3,3,64,64), bias_shape=(64,))
+    output = conv_layer[1].convolve(output, weight_shape=(3,3,64,64), bias_shape=(64,))
+    output = conv_layer[2].convolve(output, weight_shape=(3,3,64,32), bias_shape=(32,))
+    output = conv_layer[3].convolve(output, weight_shape=(3,3,32,32), bias_shape=(32,))
+    output = conv_layer[4].convolve(output, weight_shape=(3,3,32,16), bias_shape=(16,))
+    output = conv_layer[5].convolve(output, weight_shape=(3,3,16,16), bias_shape=(16,))
+    #output = conv_layer[6].convolve(output, weight_shape=(1,1,16,1), bias_shape=(1,))
+    boardsize=7
+    logits = conv_layer[6].move_logits(output, boardsize)
+
+    #another layer is softmax on this logits
+    return logits

@@ -87,6 +87,10 @@ class ValueNet(object):
 
         gl_step=0
         step=0
+        if not os.path.exists(os.path.dirname(VALUE_NET_MODEL_PATH)):
+            print("creating valuenet model directory")
+            os.mkdir(os.path.dirname(VALUE_NET_MODEL_PATH))
+
         while epoch_count < num_epoch:
             offset, next_epoch=self.prepare_batch(train_raw_states, offset, self.batch_states, self.batch_label,
                                                   batchsize=VALUE_NET_BATCH_SIZE)
@@ -120,9 +124,6 @@ class ValueNet(object):
                 print("epoch ", epoch_count, "step ", step, "train error", train_error)
 
             step += 1
-        if not os.path.exists(os.path.dirname(VALUE_NET_MODEL_PATH)):
-            print("creating valuenet model directory")
-            os.mkdir(os.path.dirname(VALUE_NET_MODEL_PATH))
 
         sess.close()
 

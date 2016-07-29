@@ -10,16 +10,19 @@ import tensorflow as tf
 from layer import Layer
 from game_util import *
 import os
-from supervised import SLNetwork, MODELS_DIR, SLMODEL_NAME
+from supervised import MODELS_DIR, SLMODEL_NAME
 
 
 VALUE_NET_BATCH_SIZE=128
 
-EVAL_SIZE=40
+EVAL_SIZE=450
 VALUE_NET_MODEL_PATH="valuemodel/valuenet_model.ckpt"
 
 tf.flags.DEFINE_string("train_example_path", "vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+".dat", "train examples path")
 tf.flags.DEFINE_string("eval_example_path", "vexamples/"+"test"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+".dat", "eval examples path")
+tf.flags.DEFINE_string("summaries_dir","/tmp/valunet_logs", "where the summaries are")
+tf.flags.DEFINE_integer("n_epoches", 1000, "number of epoches to train valuenet")
+FLAGS=tf.flags.FLAGS
 
 class ValueNet(object):
 
@@ -27,7 +30,7 @@ class ValueNet(object):
         self.declare_layers(num_hidden_layer=8)
 
 
-    def train(self, train_states_data_path, eval_states_data_path):
+    def train(self, train_states_data_path, eval_states_data_path, num_epoch=100):
         self.batch_states = np.ndarray(dtype=np.float32, shape=(VALUE_NET_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         self.batch_label = np.ndarray(dtype=np.float32, shape=(VALUE_NET_BATCH_SIZE,))
 
@@ -45,7 +48,6 @@ class ValueNet(object):
                 eval_raw_states.append(line.split())
         print("train and eval data loaded..")
         print(len(eval_raw_states))
-        num_epochs=1000
         epoch_count=0
         offset=0
 
@@ -56,13 +58,15 @@ class ValueNet(object):
         eval_targets_node = tf.placeholder(dtype=np.float32, shape=(EVAL_SIZE,))
 
         output=self.model(batch_states_node)
-        rmse_loss = tf.reduce_mean(tf.square(tf.sub(output, batch_targets_node)))
-        opt_op=tf.train.AdamOptimizer().minimize(rmse_loss)
-        #opt_op=tf.train.GradientDescentOptimizer(0.01).minimize(rmse_loss)
+        mse_train = tf.reduce_mean(tf.square(tf.sub(output, batch_targets_node)))
+        opt_op=tf.train.AdamOptimizer().minimize(mse_train)
+        #opt_op=tf.train.GradientDesceprint("train error", train_error, "epoch ", epoch_count, "step ", step)ntOptimizer(0.01).minimize(rmse_loss)
+        train_mse_summary=tf.scalar_summary("mse_train", mse_train)
 
         tf.get_variable_scope().reuse_variables()
         eval_output = self.model(eval_states_node)
-        eval_rmse=tf.reduce_mean(tf.square(tf.sub(eval_output, eval_targets_node)))
+        mse_eval=tf.reduce_mean(tf.square(tf.sub(eval_output, eval_targets_node)))
+        test_mse_summary=tf.scalar_summary("mse_test", mse_eval)
 
         sess=tf.Session()
         sess.run(tf.initialize_all_variables())
@@ -77,28 +81,49 @@ class ValueNet(object):
         sl_model = os.path.join(MODELS_DIR, SLMODEL_NAME)
         #restore variables from SL model
         saver.restore(sess, sl_model)
+
+        train_writer=tf.train.SummaryWriter(FLAGS.summaries_dir+"/train", sess.graph)
+        test_writer=tf.train.SummaryWriter(FLAGS.summaries_dir+"/test")
+
         gl_step=0
-        while epoch_count < num_epochs:
+        step=0
+        while epoch_count < num_epoch:
             offset, next_epoch=self.prepare_batch(train_raw_states, offset, self.batch_states, self.batch_label,
                                                   batchsize=VALUE_NET_BATCH_SIZE)
-            _, rmse_=sess.run([opt_op, rmse_loss], feed_dict={batch_states_node:self.batch_states,
-                                              batch_targets_node:self.batch_label})
-            print("epoch", epoch_count, "RMSE ", rmse_)
+            if next_epoch and epoch_count %10 ==0:
 
-            if next_epoch:
                 epoch_count += 1
-                if (epoch_count) % 10 == 0:
-                    self.prepare_batch(eval_raw_states, 0, self.eval_batch_states, self.eval_batch_label, EVAL_SIZE)
-                    eval_rmse_ = sess.run(eval_rmse, feed_dict={eval_states_node: self.eval_batch_states,
+                self.prepare_batch(eval_raw_states, 0, self.eval_batch_states, self.eval_batch_label, EVAL_SIZE)
+                eval_error, summary = sess.run([mse_eval, test_mse_summary], feed_dict={eval_states_node: self.eval_batch_states,
                                                                 eval_targets_node: self.eval_batch_label})
-                    print("eval RMSE:", eval_rmse_)
-                    saver.save(sess, VALUE_NET_MODEL_PATH, global_step=gl_step)
-                    gl_step += 1
-        if not os.path.exists(VALUE_NET_MODEL_PATH):
+                print("Test Mean Square Error:", eval_error)
+                saver.save(sess, VALUE_NET_MODEL_PATH, global_step=gl_step)
+                gl_step += 1
+                test_writer.add_summary(summary, epoch_count)
+
+            if (step+1) % 100 ==0:
+
+                run_options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+                run_metadata=tf.RunMetadata()
+                summary, train_error, _=sess.run([train_mse_summary, mse_train, opt_op],
+                                                 feed_dict={batch_states_node:self.batch_states, batch_targets_node:self.batch_label},
+                                                 options=run_options, run_metadata=run_metadata)
+                train_writer.add_run_metadata(run_metadata, 'step%d'%step)
+                train_writer.add_summary(summary, step)
+                print("adding run metadata for", step)
+                print("epoch ", epoch_count, "step ", step, "train error", train_error)
+            else:
+
+                train_error, summary,  _ = sess.run([mse_train, train_mse_summary, opt_op],
+                                                    feed_dict={batch_states_node:self.batch_states,batch_targets_node:self.batch_label})
+                train_writer.add_summary(summary, step)
+                print("epoch ", epoch_count, "step ", step, "train error", train_error)
+
+            step += 1
+        if not os.path.exists(os.path.dirname(VALUE_NET_MODEL_PATH)):
             print("creating valuenet model directory")
             os.mkdir(os.path.dirname(VALUE_NET_MODEL_PATH))
 
-        saver.save(sess, VALUE_NET_MODEL_PATH)
         sess.close()
 
     #the ith state, build kth batch tensor label
@@ -136,7 +161,7 @@ class ValueNet(object):
             self.conv_layer[i] = Layer("conv%d_layer" % i)
 
     # will reue this model for evaluation
-    def model(self, data_node, kernal_size=(3, 3), kernal_depth=80, value_net=False):
+    def model(self, data_node, kernal_size=(3, 3), kernal_depth=80):
         output = [None] * self.num_hidden_layer
         weightShape0 = kernal_size + (INPUT_DEPTH, kernal_depth)
         output[0] = self.input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
@@ -159,7 +184,12 @@ def main(argv=None):
     vnet=ValueNet()
     train_path=tf.flags.FLAGS.train_example_path
     test_path=tf.flags.FLAGS.eval_example_path
-    vnet.train(train_path, test_path)
+
+    if tf.gfile.Exists(FLAGS.summaries_dir):
+        tf.gfile.DeleteRecursively(FLAGS.summaries_dir)
+    tf.gfile.MakeDirs(FLAGS.summaries_dir)
+
+    vnet.train(train_path, test_path, num_epoch=FLAGS.n_epoches)
 
 if __name__ == "__main__":
     tf.app.run()

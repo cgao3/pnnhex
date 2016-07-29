@@ -9,6 +9,7 @@ from supervised import SLNetwork
 import threading
 from program import Program
 
+#WrapperAgent can wrap an exe (mohex/wolve) or an exe_nn_agent that implements the GtpInterface
 class WrapperAgent(object):
 
     def __init__(self, executable, verbose=False):
@@ -45,6 +46,12 @@ class WrapperAgent(object):
 
     def set_board_size(self, size):
         self.sendCommand("boardsize "+repr(size))
+
+    def play_move_seq(self, moves_seq):
+        turn=0
+        for m in moves_seq:
+            self.play_black(m) if turn==0 else self.play_white(m)
+            turn = (turn+1)%2
 
 class NNAgent(object):
 
@@ -89,8 +96,8 @@ class NNAgent(object):
             intmove=softmax_selection(logits, self.game_state)
             #intmove=max_selection(logits, self.game_state)
             raw_move=intmove_to_raw(intmove)
-        assert(ord('a') <= ord(raw_move[0]) <= ord('z') and 0<= int(raw_move[1:]) <BOARD_SIZE**2)
-        return raw_move
+            assert(ord('a') <= ord(raw_move[0]) <= ord('z') and 0<= int(raw_move[1:]) <BOARD_SIZE**2)
+            return raw_move
 
     def close_all(self):
         self.sess.close()

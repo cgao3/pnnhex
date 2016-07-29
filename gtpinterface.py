@@ -7,20 +7,20 @@ sys.path.append("..")
 
 from game_util import *
 
+#GtpInterface for Neural Network Agent
 class GTPInterface(object):
 
     def __init__(self, agent):
         self.agent=agent
-        commands={}
-        commands["name"]=self.gtp_name
-        commands["genmove"]=self.gtp_genmove
-        commands["quit"]=self.gtp_quit
-        commands["showboard"]=self.gtp_show
-        commands["play"]=self.gtp_play
-        commands["list_commands"]=self.gtp_list_commands
-        commands["clear_board"]=self.gtp_clear
-        commands["gamestatus"]=self.gtp_gamestatus
-        commands["close"]=self.gtp_close
+        commands={"name": self.gtp_name,
+                  "genmove": self.gtp_genmove,
+                  "quit": self.gtp_quit,
+                  "showboard": self.gtp_show,
+                  "play": self.gtp_play,
+                  "list_commands": self.gtp_list_commands,
+                  "clear_board": self.gtp_clear,
+                  "boardsize": self.gtp_boardsize,
+                  "close": self.gtp_close}
 
         self.commands=commands
 
@@ -28,22 +28,26 @@ class GTPInterface(object):
         p=command.split()
         func_key=p[0]
         args=p[1:]
-        assert(func_key in self.commands.keys())
+
+        #ignore unknow commands
+        if func_key not in self.commands:
+            return True,""
+
         #call that function with parameters
         return self.commands[func_key](args)
 
-    def gtp_name(self, args):
+    def gtp_name(self, args=None):
         return True, self.agent.agent_name
 
-    def gtp_list_commands(self, args):
+    def gtp_list_commands(self, args=None):
         return True, self.commands.keys()
 
-    def gtp_quit(self, args):
+    def gtp_quit(self, args=None):
         if self.agent.sess!=None:
             self.agent.sess.close()
         sys.exit()
 
-    def gtp_clear(self, args):
+    def gtp_clear(self, args=None):
         self.agent.reinitialize()
         return True,""
 
@@ -69,8 +73,6 @@ class GTPInterface(object):
     def gtp_genmove(self, args):
         """
         automatically detect who is to play
-        :param args:
-        :return:
         """
         raw_move=self.agent.generate_move()
 
@@ -80,22 +82,15 @@ class GTPInterface(object):
         self.gtp_play(x)
         return True, raw_move
 
-    def gtp_show(self, args):
+    def gtp_boardsize(self, args=None):
+        return True,""
+
+    def gtp_show(self, args=None):
         return True, state_to_str(self.agent.game_state)
 
-    def gtp_close(self, args):
+    def gtp_close(self, args=None):
         try:
             self.agent.sess.close()
-            return True, ""
         except AttributeError:
-            return True, ""
-
-    def gtp_gamestatus(self, args):
-        status=self.agent.gamestatus()
-        if status==-1:
-            return True, "UNSETTLED"
-        elif status==0:
-            return True, "BLACK WIN"
-        elif status==1:
-            return True, "WHITE WIN"
-        else: return False, "ERROR GAME STATUS"
+            pass
+        return True, ""

@@ -155,7 +155,7 @@ def update_unionfind(intmove, player, board, black_group, white_group):
 
 
 # input is raw score such as [-20,30,10]
-def softmax_selection(logits, currentstate):
+def softmax_selection(logits, currentstate, temperature=1.0):
     logits = np.squeeze(logits)
     empty_positions = [i for i in range(BOARD_SIZE ** 2) if i not in currentstate]
     # print("empty positions:", empty_positions)
@@ -163,9 +163,10 @@ def softmax_selection(logits, currentstate):
     effective_logits = [logits[i] for i in empty_positions]
     max_value = np.max(effective_logits)
     effective_logits = effective_logits - max_value
-    effective_logits = np.exp(effective_logits)
+    effective_logits = np.exp(effective_logits)/temperature
     sum_value = np.sum(effective_logits)
     prob = effective_logits / sum_value
+    print(prob)
     v = np.random.random()
     sum_v = 0.0
     action = None
@@ -177,7 +178,6 @@ def softmax_selection(logits, currentstate):
     ret = empty_positions[action]
     del empty_positions, effective_logits
     return ret
-
 
 # input is raw score such as [-20,30,10]
 def max_selection(logits, currentstate):

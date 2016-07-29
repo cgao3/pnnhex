@@ -94,9 +94,10 @@ class ValueNet(object):
         while epoch_count < num_epoch:
             offset, next_epoch=self.prepare_batch(train_raw_states, offset, self.batch_states, self.batch_label,
                                                   batchsize=VALUE_NET_BATCH_SIZE)
-            if next_epoch and epoch_count %10 ==0:
+            if next_epoch:
+                epoch_count +=1
 
-                epoch_count += 1
+            if next_epoch and epoch_count %10 ==0:
                 self.prepare_batch(eval_raw_states, 0, self.eval_batch_states, self.eval_batch_label, EVAL_SIZE)
                 eval_error, summary = sess.run([mse_eval, test_mse_summary], feed_dict={eval_states_node: self.eval_batch_states,
                                                                 eval_targets_node: self.eval_batch_label})

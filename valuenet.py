@@ -18,8 +18,8 @@ VALUE_NET_BATCH_SIZE=32
 EVAL_SIZE=450
 VALUE_NET_MODEL_PATH="valuemodel/valuenet_model.ckpt"
 
-tf.flags.DEFINE_string("train_example_path", "vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+".dat", "train examples path")
-tf.flags.DEFINE_string("eval_example_path", "vexamples/"+"test"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+".dat", "eval examples path")
+tf.flags.DEFINE_string("train_example_path", "vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+".txt", "train examples path")
+tf.flags.DEFINE_string("eval_example_path", "vexamples/"+"test"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+".txt", "eval examples path")
 tf.flags.DEFINE_string("summaries_dir","/tmp/valunet_logs", "where the summaries are")
 tf.flags.DEFINE_integer("n_epoches", 1000, "number of epoches to train valuenet")
 FLAGS=tf.flags.FLAGS

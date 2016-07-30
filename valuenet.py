@@ -13,7 +13,7 @@ import os
 from supervised import MODELS_DIR, SLMODEL_NAME
 
 
-VALUE_NET_BATCH_SIZE=128
+VALUE_NET_BATCH_SIZE=32
 
 EVAL_SIZE=450
 VALUE_NET_MODEL_PATH="valuemodel/valuenet_model.ckpt"
@@ -59,8 +59,9 @@ class ValueNet(object):
 
         output=self.model(batch_states_node)
         mse_train = tf.reduce_mean(tf.square(tf.sub(output, batch_targets_node)))
-        opt_op=tf.train.AdamOptimizer().minimize(mse_train)
-        #opt_op=tf.train.GradientDesceprint("train error", train_error, "epoch ", epoch_count, "step ", step)ntOptimizer(0.01).minimize(rmse_loss)
+        learning_rate=0.002/VALUE_NET_BATCH_SIZE
+        opt_op=tf.train.AdamOptimizer(learning_rate).minimize(mse_train)
+        #opt_op=tf.train.GradientDescentOptimizer(0.001).minimize(mse_train)
         train_mse_summary=tf.scalar_summary("mse_train", mse_train)
 
         tf.get_variable_scope().reuse_variables()
@@ -97,7 +98,7 @@ class ValueNet(object):
             if next_epoch:
                 epoch_count +=1
 
-            if next_epoch and epoch_count %10 ==0:
+            if (next_epoch or step==0) and epoch_count %10 ==0:
                 self.prepare_batch(eval_raw_states, 0, self.eval_batch_states, self.eval_batch_label, EVAL_SIZE)
                 eval_error, summary = sess.run([mse_eval, test_mse_summary], feed_dict={eval_states_node: self.eval_batch_states,
                                                                 eval_targets_node: self.eval_batch_label})

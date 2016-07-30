@@ -17,7 +17,7 @@ import sys
 
 EXAMPLES_PATH = "vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+"examples.dat"
 
-tf.app.flags.DEFINE_string("exe1_path", "/home/cgao3/benzene/src/wolve/wolve", "exe for the fast player")
+tf.app.flags.DEFINE_string("exe1_path", "./exec_nn_agent.py models/slmodel.ckpt", "exe for the fast player")
 tf.app.flags.DEFINE_string("exe2_path", "/home/cgao3/benzene/src/wolve/wolve", "exe for the strong player")
 tf.app.flags.DEFINE_string("output_dir","vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+"examples.dat","where to store the examples")
 tf.app.flags.DEFINE_integer("num", 10000, "num of examples to produce")
@@ -97,11 +97,32 @@ class ExampleProducer(object):
         self.strong_player.play_move_seq(move_seq)
         toplay="black" if turn==0 else "white"
         ans=self.strong_player.sendCommand("dfpn-solve-state "+toplay).strip()
+        black_seq=[]
+        white_seq=[]
+        for i, m in enumerate(move_seq):
+            if i%2==0:
+                black_seq.append(m)
+            else:
+                white_seq.append(m)
+
+        black_seq.sort()
+        white_seq.sort()
+        sorted_seq=[]
+        i1=0
+        i2=0
+        for i in range(len(move_seq)):
+            if i%2==0:
+                sorted_seq.append(black_seq[i1])
+                i1 += 1
+            else:
+                sorted_seq.append(white_seq[i2])
+                i2 += 1
+
         #print("move seq:", move_seq, "ans:",ans)
         if ans==toplay:
-            return move_seq, 1.0
+            return sorted_seq, 1.0
         else:
-            return move_seq, -1.0
+            return sorted_seq, -1.0
 
     def generate_one_example(self, param_time_limit1=None, param_time_limit2=None):
         self.fast_player.set_board_size(BOARD_SIZE)

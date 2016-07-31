@@ -20,7 +20,7 @@ EXAMPLES_PATH = "vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+"examples.dat
 tf.app.flags.DEFINE_string("exe1_path", "./exec_nn_agent.py models/slmodel.ckpt", "exe for the fast player")
 tf.app.flags.DEFINE_string("exe2_path", "/home/cgao3/benzene/src/wolve/wolve", "exe for the strong player")
 tf.app.flags.DEFINE_string("output_dir","vexamples/"+repr(BOARD_SIZE)+"x"+repr(BOARD_SIZE)+"examples.dat","where to store the examples")
-tf.app.flags.DEFINE_integer("num", 10000, "num of examples to produce")
+tf.app.flags.DEFINE_integer("num", 1000000, "num of examples to produce")
 FLAGS=tf.app.flags.FLAGS
 
 class RandomPlayer(object):
@@ -53,13 +53,31 @@ class ExampleProducer(object):
             else:
                 example = self.generate_one_example(True, 0.5, 1.0)
             if example:
-                raw_game, label=example
+                raw_state, label=example
+                sym_state=self.rotate180(raw_state)
                 count += 1
-                for m in raw_game:
-                    fout.write(m + " ")
-                fout.write(repr(label) + "\n")
+                self.write_to_file(fout, raw_state, label)
+                if sym_state:
+                    self.write_to_file(fout, sym_state, label)
                 print("count==", count)
         fout.close()
+
+    def write_to_file(self, fout, state, label):
+        for m in state:
+            fout.write(m + " ")
+        fout.write(repr(label) + "\n")
+
+    def rotate180(self, state):
+        sym_state=[]
+        N=BOARD_SIZE**2
+        for m in state:
+            im=raw_move_to_int(m)
+            sym_im=N-im
+            sym_state.append(intmove_to_raw(sym_im))
+        sorted_sym=self.sorted_state(sym_state)
+        if state==sorted_sym:
+            return False
+        return sorted_sym
 
     #fast player should be NN
     def generate_one_example_by_solving(self):
@@ -97,32 +115,35 @@ class ExampleProducer(object):
         self.strong_player.play_move_seq(move_seq)
         toplay="black" if turn==0 else "white"
         ans=self.strong_player.sendCommand("dfpn-solve-state "+toplay).strip()
-        black_seq=[]
-        white_seq=[]
-        for i, m in enumerate(move_seq):
-            if i%2==0:
+        sorted_seq=self.sorted_state(move_seq)
+        #print("move seq:", move_seq, "ans:",ans)
+        if ans==toplay:
+            return sorted_seq, 1.0
+        else:
+            return sorted_seq, -1.0
+
+    def sorted_state(self, state):
+        black_seq = []
+        white_seq = []
+        for i, m in enumerate(state):
+            if i % 2 == 0:
                 black_seq.append(m)
             else:
                 white_seq.append(m)
 
         black_seq.sort()
         white_seq.sort()
-        sorted_seq=[]
-        i1=0
-        i2=0
-        for i in range(len(move_seq)):
-            if i%2==0:
+        sorted_seq = []
+        i1 = 0
+        i2 = 0
+        for i in range(len(state)):
+            if i % 2 == 0:
                 sorted_seq.append(black_seq[i1])
                 i1 += 1
             else:
                 sorted_seq.append(white_seq[i2])
                 i2 += 1
-
-        #print("move seq:", move_seq, "ans:",ans)
-        if ans==toplay:
-            return sorted_seq, 1.0
-        else:
-            return sorted_seq, -1.0
+        return sorted_seq
 
     def generate_one_example(self, param_time_limit1=None, param_time_limit2=None):
         self.fast_player.set_board_size(BOARD_SIZE)

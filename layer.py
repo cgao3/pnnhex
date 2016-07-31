@@ -65,15 +65,16 @@ class Layer(object):
 
     #output for the value net, one tanh unit fully-connected to the previous layer
     #two layers, one full-size convolution follows with num_units relu, another convolution follows 1 tanh
-    def value_estimation(self, input_tensor, num_units):
+    def value_estimation(self, input_tensor, num_units, keep_prob):
         with tf.variable_scope(self.layer_name) as sp:
             if self.reuse_var:
                 sp.reuse_variables()
             assert(self.paddingMethod=="VALID")
             out1=self._fully_connected(input_tensor, num_units, "relu")
         with tf.variable_scope(self.layer_name+"_2"):
-            out2=self._fully_connected(out1, 1, "tanh")
-            return tf.squeeze(out2)
+            out2=self._dropout(out1, keep_prob)
+            out3=self._fully_connected(out2, 1, "tanh")
+            return tf.squeeze(out3)
 
     #fully-connected layer can be seen as convolutions: num_units is number of filters,
     #kernal size is equal to (input_width, input_height)
@@ -88,6 +89,8 @@ class Layer(object):
         elif unit_type =="relu":
             return tf.nn.relu(out)
 
+    def _dropout(self, input_tensor, keep_prob):
+        return tf.nn.dropout(input_tensor, keep_prob)
 
 if __name__ == "__main__":
     sess = tf.InteractiveSession()

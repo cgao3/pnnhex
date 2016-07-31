@@ -74,9 +74,12 @@ class GTPInterface(object):
         """
         automatically detect who is to play
         """
-        raw_move=self.agent.generate_move()
-
-        assert(args[0][0]=='b' or args[0][0]=='w')
+        assert (args[0][0] == 'b' or args[0][0] == 'w')
+        black=0
+        white=1
+        if args[0][0]=='b':
+            raw_move=self.agent.generate_move(player=black)
+        else: raw_move=self.agent.generate_move(player=white)
         x=args[0:]
         x.append(raw_move)
         self.gtp_play(x)

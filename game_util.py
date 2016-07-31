@@ -82,6 +82,11 @@ def update_tensor(tensor, player, intmove):
     tensor[0, x, y, 2] = 0
     return tensor
 
+def undo_update_tensor(tensor, player, intmove):
+    x, y = intmove // BOARD_SIZE + 1, intmove % BOARD_SIZE + 1
+    tensor[0, x, y, player] = 0 # remove "player" occupied
+    tensor[0, x, y, 2] = 1 # make it empty positions
+
 def make_empty_board_tensor(tensor):
     tensor.fill(0)
     # black occupied

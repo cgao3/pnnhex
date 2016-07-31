@@ -71,7 +71,11 @@ class NNAgent(object):
         self.data_node = tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         self.sess=tf.Session()
         if self.is_value_net :
-            pass
+            from valuenet import ValueNet
+            self.vnet=ValueNet()
+            self.keep_prob_node=tf.placeholder(tf.float32)
+            self.value=self.vnet.model(self.data_node, keep_prob_node=self.keep_prob_node)
+            self.position_values=np.ndarray(dtype=np.float32, shape=(BOARD_SIZE**2,))
         else:
             self.net = SLNetwork()
             self.net.declare_layers(num_hidden_layer=8)
@@ -88,9 +92,19 @@ class NNAgent(object):
         update_tensor(self.boardtensor, intplayer, intmove)
         self.game_state.append(intmove)
 
-    def generate_move(self):
+    def generate_move(self, intplayer=None):
         if self.is_value_net :
-            pass
+            s=list(self.game_state)
+            empty_positions=[i for i in range(BOARD_SIZE**2) if i not in s]
+            self.position_values.fill(0.0)
+            for intmove in empty_positions:
+                update_tensor(self.boardtensor, intplayer, intmove)
+                v=self.sess.run(self.value, feed_dict={self.data_node:self.boardtensor})
+                undo_update_tensor(self.boardtensor,intplayer, intmove)
+                self.position_values[intmove]=v
+            im=softmax_selection(self.position_values, self.game_state, temperature=0.1)
+            #im=max_selection(self.position_values, self.game_state)
+            return im
         else:
             logits=self.sess.run(self.logit, feed_dict={self.data_node:self.boardtensor})
             intmove=softmax_selection(logits, self.game_state)

@@ -171,7 +171,7 @@ def softmax_selection(logits, currentstate, temperature=1.0):
     effective_logits = np.exp(effective_logits)/temperature
     sum_value = np.sum(effective_logits)
     prob = effective_logits / sum_value
-    print(prob)
+    #print(prob)
     v = np.random.random()
     sum_v = 0.0
     action = None

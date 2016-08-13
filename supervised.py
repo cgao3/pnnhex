@@ -11,14 +11,14 @@ from read_data import *
 from six.moves import xrange
 import os
 
-TRAIN_DATA_PATH="data/7x7rawgames.dat"
-TEST_DATA_PATH="data/test7x7.dat"
+TRAIN_DATA_PATH="data/8x8rawgames.dat"
+TEST_DATA_PATH="data/test8x8games.dat"
 
 MODELS_DIR="models/"
 SLMODEL_NAME="slmodel.ckpt"
 
-tf.app.flags.DEFINE_boolean("training", True, "False if for evaluation")
-tf.app.flags.DEFINE_integer("num_epoch", 100, "number of epoches")
+tf.app.flags.DEFINE_boolean("saving_graph", False, "True if just to save the computation graph")
+tf.app.flags.DEFINE_integer("num_epoch", 400, "number of epoches")
 FLAGS = tf.app.flags.FLAGS
 
 class SLNetwork(object):
@@ -52,6 +52,19 @@ class SLNetwork(object):
 
         return logits
 
+    def save_graph(self):
+        self.declare_layers(num_hidden_layer=5)
+        data_node=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
+        logits=self.model(data_node)
+        tf.nn.softmax(logits, name="soft_max_output_node")
+        sess=tf.Session()
+        sl_model_dir = os.path.dirname(MODELS_DIR)
+        print("saving computation graph for c++ inference")
+        tf.train.write_graph(sess.graph_def, sl_model_dir, "graph.pbtxt")
+        tf.train.write_graph(sess.graph_def, sl_model_dir, "graph.pb", as_text=False)
+        sess.close()
+        print("Done.")
+
 
     def train(self, num_epochs):
         self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
@@ -64,7 +77,7 @@ class SLNetwork(object):
         test_data_util=data_util()
         test_data_util.load_offline_data(self.test_data_path,train_data=False)
         print("train and test data loaded..")
-        self.declare_layers(num_hidden_layer=8)
+        self.declare_layers(num_hidden_layer=5)
         logits=self.model(self.train_data_node)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, self.train_labels_node))
         train_prediction = tf.nn.softmax(logits)
@@ -114,6 +127,7 @@ class SLNetwork(object):
             if not os.path.exists(sl_model_dir):
                 print("creating dir ", sl_model_dir)
                 os.makedirs(sl_model_dir)
+            print("saving checkpoint: "+sl_model_dir)
             saver.save(sess, os.path.join(sl_model_dir, SLMODEL_NAME))
 
 def error_rate(predictions, labels):

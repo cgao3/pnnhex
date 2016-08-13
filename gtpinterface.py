@@ -78,8 +78,8 @@ class GTPInterface(object):
         black=0
         white=1
         if args[0][0]=='b':
-            raw_move=self.agent.generate_move(player=black)
-        else: raw_move=self.agent.generate_move(player=white)
+            raw_move=self.agent.generate_move(intplayer=black)
+        else: raw_move=self.agent.generate_move(intplayer=white)
         x=args[0:]
         x.append(raw_move)
         self.gtp_play(x)

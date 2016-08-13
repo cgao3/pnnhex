@@ -7,12 +7,12 @@ from six.moves import xrange
 
 import numpy as np
 
-BOARD_SIZE = 7
+BOARD_SIZE = 8
 BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 3
 
-EVAL_BATCH_SIZE=100
+EVAL_BATCH_SIZE=5000
 
 class data_util(object):
 

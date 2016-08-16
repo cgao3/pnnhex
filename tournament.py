@@ -51,6 +51,7 @@ if __name__ == "__main__":
     parser=argparse.ArgumentParser(description="tournament between agents")
     #parser.add_argument("num_games", type=int, help="num of paired games playing")
     parser.add_argument("model_path", help="where the model locates", type=str)
+    parser.add_argument("--wolve_path",default="/home/cgao3/benzene/src/wolve/wolve", help="where is the wolve", type=str)
     parser.add_argument("--value_net", help="whether it is valuenet model", action="store_true", default=False)
     parser.add_argument("--verbose", help="verbose?", action="store_true", default=False)
 
@@ -58,6 +59,7 @@ if __name__ == "__main__":
     num_games=1000
     think_time=1
     net_exe=EXE_NN_AGENT_NAME + args.model_path +" 2>/dev/null"
+    EXE_HEX_PATH=args.wolve_path
     wolve_exe=EXE_HEX_PATH+" 2>/dev/null"
     wolve=WrapperAgent(wolve_exe, True)
     net=WrapperAgent(net_exe, True)

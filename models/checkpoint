@@ -1,0 +1,2 @@
+model_checkpoint_path: "slmodel.ckpt-1364"
+all_model_checkpoint_paths: "slmodel.ckpt-1364"

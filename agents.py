@@ -78,7 +78,7 @@ class NNAgent(object):
             self.position_values=np.ndarray(dtype=np.float32, shape=(BOARD_SIZE**2,))
         else:
             self.net = SLNetwork()
-            self.net.declare_layers(num_hidden_layer=8)
+            self.net.declare_layers(num_hidden_layer=5)
             self.logit=self.net.model(self.data_node)
         saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)

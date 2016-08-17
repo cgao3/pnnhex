@@ -55,10 +55,6 @@ class SLNetwork(object):
 
         return logits
 
-    def test_play(self, sess, sl_model_dir):
-        sess.run(
-        print("Done.")
-
 
     def train(self, num_epochs):
            

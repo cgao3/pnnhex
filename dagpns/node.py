@@ -5,13 +5,11 @@ from __future__ import division
 
 class Node:
 
-    def __init__(self, theta, phi):
-        self.theta=theta
+    def __init__(self, code,phi, delta, parents=None):
+        self.delta=delta
         self.phi=phi
-
-    def expand(self):
-
-        pass
+        self.code=code
+        self.parents=parents
 
 
 if __name__ == "__main__":

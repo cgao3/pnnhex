@@ -8,10 +8,9 @@ from zobrist import zobristhashes
 
 
 class HexColor:
-
     def __init__(self):
         pass
-    BLACK, WHITE, EMPTY = range(3)
+    BLACK, WHITE, EMPTY = range(1,4)
 
 class ZobristHash:
     def __init__(self, boardsize):
@@ -21,10 +20,10 @@ class ZobristHash:
         self.m_base=self.m_hashes[boardsize*30+boardsize]
         self.m_black_hashes=self.m_hashes[1024:2048]
         self.m_white_hashes=self.m_hashes[2048:3072]
-        self.color_hashes=[None, None]
+        self.color_hashes=[None, None, None]
         self.color_hashes[HexColor.BLACK]=self.m_hashes[1024:2048]
         self.color_hashes[HexColor.WHITE]=self.m_hashes[2048:3072]
-        self.toplay_hashes=[None, None, None]
+        self.toplay_hashes=[None, None, None, None]
         self.toplay_hashes[HexColor.BLACK]=self.m_hashes[3072]
         self.toplay_hashes[HexColor.WHITE]=self.m_hashes[3073]
         self.toplay_hashes[HexColor.EMPTY]=self.m_hashes[3074]
@@ -48,6 +47,18 @@ class ZobristHash:
 
     def hash(self, toplay):
         return self.m_hash ^ self.toplay_hashes[toplay]
+
+    def get_hash(self, intstate):
+        toplay=HexColor.BLACK
+        code=self.m_base
+        for m in intstate:
+            code = code ^ self.color_hashes[toplay][m]
+            toplay = HexColor.EMPTY - toplay
+        return code
+
+    def update_hash(self, code, intmove, intplayer):
+
+        return  code ^ self.color_hashes[intplayer][intmove]
 
     def compute(self, black_stone_pos, white_stone_pos, toplay=None):
         self.reset()

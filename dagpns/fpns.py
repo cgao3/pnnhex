@@ -11,7 +11,7 @@ from dagpns.pns import winner, updateUF
 import Queue
 
 INF=200000000.0
-BOARD_SIZE=4
+BOARD_SIZE=3
 
 NORTH_EDGE=-1
 SOUTH_EDGE=-2
@@ -23,12 +23,11 @@ EPSILON=1e-5
 class FPNS:
     def __init__(self):
         self.mWorkHash=0
-        self.mTT={}
         self.mToplay=None
-        self.workState=None
+        self.mWorkState=None
         self.zhash = ZobristHash(boardsize=BOARD_SIZE)
-        self.node_cnt=0
-        self.mid_calls=0
+        self.node_cnt=None
+        self.mid_calls=None
 
     def evaluate(self, moveseq):
         blackUF=unionfind()
@@ -39,6 +38,7 @@ class FPNS:
             toplay=HexColor.EMPTY - toplay
         outcome=winner(blackUF, whiteUF)
         if outcome!=HexColor.EMPTY:
+            print("possible?")
             return outcome
         for m in range(BOARD_SIZE**2):
             if m not in moveseq:
@@ -46,12 +46,14 @@ class FPNS:
                 moveseq.append(m)
                 b,w=updateUF(moveseq, b,w,m,self.mToplay)
                 res=winner(b,w)
+                moveseq.remove(m)
                 if res!=HexColor.EMPTY:
                     return res
-                moveseq.remove(m)
         return winner(blackUF, whiteUF)
 
     def fdfpns(self,state, toplay):
+        self.node_cnt = 0
+        self.mid_calls = 0
         self.mToplay = toplay
         self.mWorkState=state
         self.rootToplay=toplay
@@ -59,9 +61,9 @@ class FPNS:
         self.mWorkHash=self.zhash.get_hash(intstate=state)
         root = Node(phi=INF, delta=INF, code=self.mWorkHash, parents=[])
         self.MID(root)
-        if(abs(root.phi) < EPSILON):
+        if(abs(root.phi) < EPSILON or root.delta >= INF-EPSILON):
             print(toplay, " Win")
-        elif abs(root.delta) <EPSILON:
+        elif abs(root.delta) < EPSILON:
             print(toplay, "Lose")
         else:
             print("Unknown, something wrong?")
@@ -71,7 +73,8 @@ class FPNS:
 
     def MID(self, n):
         self.mid_calls +=1
-        print("MID calls, ", self.mid_calls)
+        assert(len(self.mWorkState)%2+1==self.mToplay)
+        print("MID calls, ", self.mid_calls, "num nodes ", self.node_cnt)
         outcome=self.evaluate(self.mWorkState)
         if (outcome!=HexColor.EMPTY):
             if outcome==self.mToplay:
@@ -83,10 +86,12 @@ class FPNS:
             return
 
         self.generate_moves()
-        while n.phi > self.deltaMin() and n.delta > self.phiSum():
+        delta_thre=self.phiSum()
+        phi_thre = self.deltaMin()
+        while n.phi > phi_thre and n.delta > delta_thre:
             c_best, delta2, best_move=self.selectChild()
-            c_best.phi = n.delta - self.phiSum() + c_best.phi/len(c_best.parents)
-            c_best.delta=min(n.phi, delta2+1)
+            c_best.phi = n.delta - delta_thre + c_best.phi/len(c_best.parents)
+            c_best.delta=min(n.phi, (delta2*(1+0.25)))
             self.mWorkState.append(best_move)
             self.mWorkHash=self.zhash.update_hash(code=self.mWorkHash, intmove=best_move, intplayer=self.mToplay)
             self.mToplay= HexColor.EMPTY - self.mToplay
@@ -94,6 +99,8 @@ class FPNS:
             self.mWorkState.remove(best_move)
             self.mToplay = HexColor.EMPTY - self.mToplay
             self.mWorkHash = self.zhash.update_hash(code=self.mWorkHash, intmove=best_move, intplayer=self.mToplay)
+            delta_thre=self.phiSum()
+            phi_thre=self.deltaMin()
         n.phi=self.deltaMin()
         n.delta=self.phiSum()
         self.tt_write(n)
@@ -102,18 +109,21 @@ class FPNS:
     def generate_moves(self):
         for i in range(BOARD_SIZE**2):
             if i not in self.mWorkState:
-                tcode=self.zhash.update_hash(code=self.mWorkHash, intmove=i, intplayer=self.mToplay)
-                leaf=self.tt_lookup(tcode)
-                if leaf == False:
-                    n=Node(code=tcode, phi=1., delta=1., parents=[self.mWorkHash])
+                child_code=self.zhash.update_hash(code=self.mWorkHash, intmove=i, intplayer=self.mToplay)
+                leaf=self.tt_lookup(child_code)
+                if not leaf:
+                    n=Node(code=child_code, phi=1.0, delta=1.0, parents=[self.mWorkHash])
                     self.tt_write(n)
                     self.node_cnt += 1
                 else:
                     sz=len(leaf.parents)
                     phi_decrease= leaf.phi/sz - leaf.phi/(sz+1.0)
-                    #leaf.phi, leaf.delta=leaf.phi/(sz+1), leaf.delta/(sz+1)
-                    #self.update_ancestors(leaf, phi_decrease,leaf.delta)
+                    #leaf.phi, leaf.delta=leaf.phi/(sz+1.0), leaf.delta/(sz+1.0)
+                    for p in leaf.parents:
+                        p_node=self.tt_lookup(p)
+                        self.update_ancestors(p_node, phi_decrease,leaf.delta)
                     leaf.parents.append(self.mWorkHash)
+                    self.tt_write(leaf)
 
     def update_ancestors(self, node, phi_decrease, child_delta):
         #return
@@ -126,10 +136,11 @@ class FPNS:
                 node.phi = child_delta
             else:
                 phi_decrease = 0
+            self.tt_write(node)
             for pnode_code in node.parents:
                 pnode=self.tt_lookup(code=pnode_code)
-                if pnode:
-                    self.update_ancestors(pnode, phi_decrease, node.delta)
+                #if pnode:
+                    #self.update_ancestors(pnode, phi_decrease, node.delta)
         else:
             return
 
@@ -140,55 +151,58 @@ class FPNS:
         if code in self.mTT.keys():
             return self.mTT[code]
         else:
-            #no this node
             return False
 
     def selectChild(self):
-        delta1=INF+1
-        delta2=INF+1
+        delta_best=INF+EPSILON
+        delta2_best=INF+EPSILON
         best_child_node=None
         best_move=None
         for i in range(BOARD_SIZE**2):
             if i not in self.mWorkState:
-                tcode=self.zhash.update_hash(code=self.mWorkHash, intmove=i, intplayer=self.mToplay)
-                tnode=self.tt_lookup(tcode)
-                assert(tnode)
-                phi=INF if tnode.phi >=INF else tnode.phi/len(tnode.parents)
-                delta=INF if tnode.delta >=INF else tnode.delta/len(tnode.parents)
-                if delta < delta1:
+                child_code=self.zhash.update_hash(code=self.mWorkHash, intmove=i, intplayer=self.mToplay)
+                child_node=self.tt_lookup(child_code)
+                assert(child_node)
+                #phi, delta=child_node.phi, child_node.delta
+                phi=INF if child_node.phi >=INF-EPSILON else child_node.phi/len(child_node.parents)
+                delta=INF if child_node.delta >=INF-EPSILON else child_node.delta/len(child_node.parents)
+                print(phi, delta)
+                if delta < delta_best:
                     best_move=i
-                    best_child_node=tnode
-                    delta2=delta1
-                    delta1=delta
-                elif delta < delta2:
-                    delta2 = delta
-                if phi >= INF:
-                    return (tnode, delta2, best_move)
-        print(best_child_node, delta2, best_move)
+                    best_child_node=child_node
+                    delta2_best=delta_best
+                    delta_best=delta
+                elif delta < delta2_best:
+                    delta2_best = delta
+                if phi >= INF-EPSILON:
+                    return (child_node, delta2_best, i)
+        print("state ", self.mWorkState)
+        print(best_child_node, delta2_best, best_move)
         assert(best_child_node)
-        assert(delta2)
+        assert(delta2_best<=INF)
         assert(best_move!=None)
-        return best_child_node, delta2, best_move
+        return best_child_node, delta2_best, best_move
 
     def phiSum(self):
         s=0
         for i in range(BOARD_SIZE**2):
             if i not in self.mWorkState:
-                tcode=self.zhash.update_hash(code=self.mWorkHash, intmove=i, intplayer=self.mToplay)
-                tnode=self.tt_lookup(tcode)
-                s+=tnode.phi/len(tnode.parents)
-                assert (tnode)
+                child_code=self.zhash.update_hash(code=self.mWorkHash, intmove=i, intplayer=self.mToplay)
+                child_node=self.tt_lookup(child_code)
+                phi = INF if child_node.phi > INF -EPSILON else child_node.phi/len(child_node.parents)
+                s+= phi
+                assert (child_node)
         return s
 
     def deltaMin(self):
         min_delta=INF
         for i in range(BOARD_SIZE**2):
             if i not in self.mWorkState:
-                tcode = self.zhash.update_hash(code=self.mWorkHash, intmove=i, intplayer=self.mToplay)
-                tnode = self.tt_lookup(tcode)
-                #print("pair ",pair)
-                assert(tnode)
-                min_delta=min(min_delta, tnode.delta/len(tnode.parents))
+                child_code = self.zhash.update_hash(code=self.mWorkHash, intmove=i, intplayer=self.mToplay)
+                child_node = self.tt_lookup(child_code)
+                assert(child_node)
+                delta = INF if child_node.delta > INF -EPSILON else child_node.delta/len(child_node.parents)
+                min_delta=min(min_delta, delta)
         return min_delta
 
 if __name__ == "__main__":

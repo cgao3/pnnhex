@@ -5,60 +5,11 @@ from __future__ import division
 import numpy as np
 from zobrist.zobrist import *
 from utils.unionfind import *
-from dagpns.node import Node
+from dagpns.commons import *
+
 import copy
 
 INF=200000000
-BOARD_SIZE=3
-
-NORTH_EDGE=-1
-SOUTH_EDGE=-2
-WEST_EDGE=-3
-EAST_EDGE=-4
-
-EPSILON=1e-5
-
-#0 for black win, 1-white win, -1 unsettled.
-def winner(black_group, white_group):
-    if (black_group.connected(NORTH_EDGE, SOUTH_EDGE)):
-        return HexColor.BLACK
-    elif (white_group.connected(WEST_EDGE, EAST_EDGE)):
-        return HexColor.WHITE
-    else:
-        return HexColor.EMPTY
-
-def updateUF(board, black_group, white_group, intmove, player):
-    assert(player == HexColor.BLACK or player== HexColor.WHITE)
-    x, y = intmove // BOARD_SIZE, intmove % BOARD_SIZE
-    neighbors = []
-    pattern = [(-1, 0), (0, -1), (0, 1), (1, 0), (-1, 1), (1, -1)]
-    for p in pattern:
-        x1, y1 = p[0] + x, p[1] + y
-        if 0 <= x1 < BOARD_SIZE and 0 <= y1 < BOARD_SIZE:
-            neighbors.append((x1, y1))
-    if (player == HexColor.BLACK):
-        if (y == 0):
-            black_group.join(intmove, NORTH_EDGE)
-        if (y == BOARD_SIZE - 1):
-            black_group.join(intmove, SOUTH_EDGE)
-
-        for m in neighbors:
-            m2 = m[0] * BOARD_SIZE + m[1]
-            if (m2 in board and list(board).index(m2) % 2 == player-1):
-                black_group.join(m2, intmove)
-    else:
-
-        if (x == 0):
-            white_group.join(intmove, WEST_EDGE)
-        if (x == BOARD_SIZE - 1):
-            white_group.join(intmove, EAST_EDGE)
-
-        for m in neighbors:
-            im = m[0] * BOARD_SIZE + m[1]
-            if (im in board and list(board).index(im) % 2 == player-1):
-                white_group.join(im, intmove)
-    # print(black_group.parent)
-    return (black_group, white_group)
 
 class PNS:
     def __init__(self):
@@ -146,13 +97,9 @@ class PNS:
             self.mWorkState.append(best_move)
             self.mWorkHash=self.zhash.update_hash(code=self.mWorkHash, intmove=best_move, intplayer=self.mToplay)
             self.mToplay= HexColor.EMPTY - self.mToplay
-            #print("workstate: ", self.mWorkState, "best_move", best_move, "toplay", self.mToplay)
             self.MID(c_best)
-            #print("before remove", best_move, self.mWorkState)
             self.mWorkState.remove(best_move)
-            #print("after remove", self.mWorkState)
             self.mToplay = HexColor.EMPTY - self.mToplay
-            #print("after work:", self.mWorkState, "toplay ", self.mToplay)
             self.mWorkHash = self.zhash.update_hash(code=self.mWorkHash, intmove=best_move, intplayer=self.mToplay)
             phi_thre=self.deltaMin()
             delta_thre=self.phiSum()
@@ -229,12 +176,13 @@ class PNS:
         return min_delta
 
 if __name__ == "__main__":
-    pns=PNS()
-    state=[]
-    toplay=HexColor.BLACK
-    pns.dfpns(state=state, toplay=toplay)
-    pns2=PNS()
-    for i in range(BOARD_SIZE**2):
-        print("openning ", i)
-        state=[i]
-        pns2.dfpns(state=state, toplay=HexColor.WHITE)
+
+     pns=PNS()
+     state=[]
+     toplay=HexColor.BLACK
+     pns.dfpns(state=state, toplay=toplay)
+     pns2=PNS()
+     for i in range(BOARD_SIZE**2):
+         print("openning ", i)
+         state=[i]
+         pns2.dfpns(state=state, toplay=HexColor.WHITE)

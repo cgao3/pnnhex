@@ -234,7 +234,7 @@ if __name__ == "__main__":
     toplay=HexColor.BLACK
     pns.dfpns(state=state, toplay=toplay)
     pns2=PNS()
-    for i in range(0*BOARD_SIZE**2):
+    for i in range(BOARD_SIZE**2):
         print("openning ", i)
         state=[i]
         pns2.dfpns(state=state, toplay=HexColor.WHITE)

@@ -10,7 +10,7 @@ import Queue
 import copy
 
 INF = 2000000000.0
-BOARD_SIZE=3
+BOARD_SIZE=4
 
 NORTH_EDGE=-1
 SOUTH_EDGE=-2
@@ -92,6 +92,12 @@ class PNSF:
             ite +=1
             #if ite>3: break
             rootNode=self.tt_lookup(rootHash)
+        print(rootNode.phi, rootNode.delta)
+        print("number of nodes expanded:", self.node_cnt)
+        if rootNode.phi <EPSILON:
+            print(toplay, "wins")
+        else:
+            print(toplay, "loses")
 
     def tt_lookup(self, code):
         if code in self.mTT.keys():
@@ -106,7 +112,7 @@ class PNSF:
         for child_code,move in n.children:
             node=self.tt_lookup(child_code)
             k = len(node.parents)
-            if k == 0: k = 1
+            if k == 0 or node.phi+EPSILON>INF: k = 1
             assert(node)
             s += node.phi/k
         return s
@@ -117,13 +123,15 @@ class PNSF:
             node = self.tt_lookup(child_code)
             assert (node)
             k=len(node.parents)
-            if k==0: k=1
+            if k==0 or node.delta+EPSILON>INF: k=1
             min_delta=min(min_delta, node.delta/k)
         return min_delta
 
     def selection(self):
         print("start selection..")
+        ite=0
         while self.mNode.isexpanded:
+            #print(self.mState, self.mHash, self.mNode.phi, self.mNode.delta, self.mNode.children)
             best_move=-1
             best_val=INF
             best_child=None
@@ -141,9 +149,11 @@ class PNSF:
             self.mHash=best_child_code
             self.mToplay = HexColor.EMPTY - self.mToplay
             self.mNode=best_child
-            print("best-child", best_child_code)
+
+            #print("best-child", best_child_code)
         print("end seelction")
     def expansion(self):
+        self.mNode=self.tt_lookup(self.mHash)
         assert(self.mNode.isexpanded==False)
         self.mNode.asExpanded()
         avail_moves=[i for i in range(BOARD_SIZE**2) if i not in self.mState]
@@ -158,7 +168,7 @@ class PNSF:
             if node:
                 node.parents.append(self.mHash)
                 self.tt_write(child_code, node)
-                self.mExisting.append(node)
+                self.mExisting.append(child_code)
                 existing +=1
                 continue
             assert(node==False)
@@ -197,9 +207,9 @@ class PNSF:
             code=Q.get()
             self.mNode=self.tt_lookup(code)
             oldphi, olddelta=self.mNode.phi, self.mNode.delta
-            self.mNode.phi, self.mNode.delta=self.deltaMin(self.mNode), self.phiSum(self.mNode)
-            self.tt_write(self.mHash, self.mNode)
-            if abs(self.mNode.phi -oldphi) > EPSILON or abs(self.mNode.delta-olddelta) >EPSILON:
+            p,d=self.deltaMin(self.mNode), self.phiSum(self.mNode)
+            if abs(p -oldphi) > EPSILON or abs(d-olddelta) >EPSILON:
+                self.mNode.phi, self.mNode.delta=p,d
                 self.tt_write(code, self.mNode)
                 for p_code in self.mNode.parents:
                     if p_code not in Q.queue: Q.put(p_code)
@@ -209,3 +219,8 @@ if __name__ == "__main__":
     s=[]
     toplay=HexColor.BLACK if len(s)%2==0 else HexColor.WHITE
     pnsf.pns(s, toplay)
+    for i in range(BOARD_SIZE ** 2):
+        pns2 = PNSF()
+        print("openning ", i)
+        state = [i]
+        pns2.pns(state, HexColor.WHITE)

@@ -11,7 +11,7 @@ import copy
 INF = 2000000000.0
 EPSILON=1e-5
 
-class PNSF:
+class FPNS:
 
     def __init__(self):
         self.mToplay=None
@@ -56,10 +56,8 @@ class PNSF:
             self.mState = copy.deepcopy(rootstate)
             self.mToplay = toplay
             self.mNode = self.tt_lookup(self.mHash)
-            print("iteration ", ite, "root.phi, root.delta", rootNode.phi, rootNode.delta)
-            print("root ", self.mHash)
+            print("iteration ", ite, "root:", self.mHash, "root.phi, root.delta", rootNode.phi, rootNode.delta)
             self.selection()
-            print("selected: ", self.mHash)
             self.expansion()
             print("after expansion  \n")
             self.update_ancesotrs()
@@ -67,6 +65,7 @@ class PNSF:
             #if ite>3: break
             rootNode=self.tt_lookup(rootHash)
         print(rootNode.phi, rootNode.delta)
+        print("1-Black, 2-White")
         print("number of nodes expanded:", self.node_cnt)
         if rootNode.phi <EPSILON:
             print(toplay, "wins")
@@ -105,7 +104,6 @@ class PNSF:
         return min_delta
 
     def selection(self):
-        print("start selection..")
 
         while self.mNode.isexpanded:
             #print(self.mState, self.mHash, self.mNode.phi, self.mNode.delta, self.mNode.children)
@@ -132,7 +130,6 @@ class PNSF:
         toplay2 = HexColor.BLACK if len(self.mState)%2==0 else HexColor.WHITE
         assert (toplay2 == self.mToplay)
             #print("best-child", best_child_code)
-        print("end seelction")
 
     def expansion(self):
         self.mNode=self.tt_lookup(self.mHash)
@@ -212,12 +209,19 @@ if __name__ == "__main__":
     # pnsf.mToplay=HexColor.WHITE
     # res=pnsf.evaluate(s)
     # print("res=",res)
-    pnsf=PNSF()
+    pns=FPNS()
+    #s=[3,1]
+    #toplay=HexColor.BLACK if len(s)%2==0 else HexColor.WHITE
+    #pnsf.pns(s, toplay)
     s=[3]
-    toplay=HexColor.BLACK if len(s)%2==0 else HexColor.WHITE
-    pnsf.pns(s, toplay)
+    for i in [0,1,2,4,5,6,7,8,9,10,11,12,13,14,15]:
+        s.append(i)
+        toplay = HexColor.BLACK if len(s) % 2 == 0 else HexColor.WHITE
+        pns.pns(s,toplay)
+        s.remove(i)
+
     for i in range(0*BOARD_SIZE ** 2):
-        pns2 = PNSF()
+        pns2 = FPNS()
         print("openning ", i)
         state = [i]
         pns2.pns(state, HexColor.WHITE)

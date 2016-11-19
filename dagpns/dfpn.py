@@ -11,7 +11,7 @@ import copy
 
 INF=200000000
 
-class PNS:
+class DFPN:
     def __init__(self):
         self.mWorkHash=None
         self.mTT=None
@@ -56,6 +56,7 @@ class PNS:
         self.mWorkHash=self.zhash.get_hash(intstate=state)
         root = Node(phi=INF, delta=INF, code=self.mWorkHash)
         self.MID(root)
+        print("1 for Black, 2 for White")
         if(root.delta>=INF):
             print(toplay, " Win")
         elif root.delta == 0:
@@ -63,8 +64,7 @@ class PNS:
         else:
             print("Unknown, something wrong?")
 
-        print("number nodes expanded: ", self.node_cnt)
-        print("number of MID calls: ", self.mid_calls)
+        print("number nodes expanded: ", self.node_cnt, "MID calls:", self.mid_calls)
 
     def MID(self, n):
         print("MID call: ", self.mid_calls, "state: ", self.mWorkState, "toplay=", self.mToplay)
@@ -79,13 +79,11 @@ class PNS:
                 (n.phi, n.delta)=(0, INF)
             else:
                 (n.phi, n.delta)=(INF, 0)
-            #print("Terminal state: ", self.mWorkState)
             #self.mToplay=HexColor.EMPTY - self.mToplay
             self.tt_write(n)
             return
 
         self.generate_moves()
-        #print("MID call2: ", self.mid_calls, "state: ", self.mWorkState, "toplay=", self.mToplay)
 
         phi_thre=self.deltaMin()
         delta_thre=self.phiSum()
@@ -177,12 +175,16 @@ class PNS:
 
 if __name__ == "__main__":
 
-     pns=PNS()
-     state=[]
-     toplay=HexColor.BLACK
-     pns.dfpns(state=state, toplay=toplay)
-     pns2=PNS()
-     for i in range(BOARD_SIZE**2):
+     pns=DFPN()
+     pns2=DFPN()
+     s = [3]
+     for i in [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
+         s.append(i)
+         toplay = HexColor.BLACK if len(s) % 2 == 0 else HexColor.WHITE
+         pns.dfpns(s, toplay)
+         s.remove(i)
+         
+     for i in range(0*BOARD_SIZE**2):
          print("openning ", i)
          state=[i]
          pns2.dfpns(state=state, toplay=HexColor.WHITE)

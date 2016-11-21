@@ -19,12 +19,13 @@ class Node:
         self.parents=parents
 
 class FNode:
-    def __init__(self, phi, delta, isexpanded, parents=None, children=None):
+    def __init__(self, phi, delta, isexpanded, parents=None, children=None, estimated_updegree=None):
         self.phi = phi
         self.delta = delta
         self.isexpanded = isexpanded
         self.parents = parents
         self.children = children
+        self.estimated_updegree=estimated_updegree
 
     def asExpanded(self):
         self.isexpanded = True

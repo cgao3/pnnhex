@@ -12,7 +12,6 @@ import time
 INF = 2000000000.0
 EPSILON=1e-5
 
-#update worst case O(n), but with better implementation than fpns.py
 class FPNS:
 
     def __init__(self):
@@ -86,7 +85,8 @@ class FPNS:
         s=0
         for child_code,move in n.children:
             node=self.tt_lookup(child_code)
-            k = len(node.parents)
+            #k = len(node.parents)
+            k=node.estimated_updegree
             assert(k>0)
             if node.phi+EPSILON>INF: k = 1
             assert(node)
@@ -99,7 +99,8 @@ class FPNS:
         for child_code,move in n.children:
             node = self.tt_lookup(child_code)
             assert (node)
-            k=len(node.parents)
+            #k=len(node.parents)
+            k=node.estimated_updegree
             assert(k>0)
             if node.delta+EPSILON>INF: k=1
             min_delta=min(min_delta, node.delta/k)
@@ -117,8 +118,8 @@ class FPNS:
                 node=self.tt_lookup(child_code)
                 assert(node)
                 e_delta=node.delta
-                if e_delta + EPSILON <INF and len(node.parents)!=0:
-                    e_delta = e_delta/len(node.parents)
+                if e_delta + EPSILON <INF and node.estimated_updegree!=0:
+                    e_delta = e_delta/node.estimated_updegree
                 if e_delta < best_val:
                     best_val = e_delta
                     best_move = move
@@ -143,6 +144,8 @@ class FPNS:
         toplay2 = HexColor.BLACK if len(self.mState)%2==0 else HexColor.WHITE
         assert (toplay2 == self.mToplay)
         self.mExisting=[]
+
+
         for m in avail_moves:
             child_code=self.zsh.update_hash(code=self.mHash, intmove=m, intplayer=self.mToplay)
             self.mNode.children.append((child_code,m))
@@ -158,12 +161,14 @@ class FPNS:
             self.mState.append(m)
             self.mToplay = HexColor.EMPTY - self.mToplay
             res=self.evaluate(self.mState)
+            expected_up_degree = (len(self.mState) + 1) // 2
+            assert (expected_up_degree >=1)
             if res!=HexColor.EMPTY:
                 toplay2=HexColor.BLACK if len(self.mState)%2==0 else HexColor.WHITE
                 print("terminal:", self.mToplay, self.mState, "m=",m)
                 assert(toplay2 == self.mToplay)
                 phi,delta=(0,INF) if res==self.mToplay else (INF, 0)
-                leaf=FNode(phi=phi, delta=delta, isexpanded=True)
+                leaf=FNode(phi=phi, delta=delta, isexpanded=True, estimated_updegree=expected_up_degree)
                 leaf.parents=[self.mHash]
                 self.tt_write(child_code, leaf)
                 self.node_cnt +=1
@@ -174,7 +179,7 @@ class FPNS:
                     break
             else:
                 phi,delta=(1,1)
-                leaf=FNode(phi=phi, delta=delta, isexpanded=False)
+                leaf=FNode(phi=phi, delta=delta, isexpanded=False, estimated_updegree=expected_up_degree)
                 leaf.parents=[self.mHash]
                 self.tt_write(child_code, leaf)
                 self.node_cnt +=1
@@ -184,41 +189,15 @@ class FPNS:
         print("expanding ", self.mHash, "has", len(self.mNode.children), "nodes, ", existing, "existing")
 
     def update_ancesotrs(self):
-        Q2 = Queue.Queue()
-        if len(self.mExisting)>0:
+        Q = Queue.Queue()
+        Q.put(self.mHash)
+        if 0 and len(self.mExisting)>0:
             for c_code in self.mExisting:
                 c_node=self.tt_lookup(c_code)
                 assert(c_node)
                 for p_code in c_node.parents:
-                    tmplist=Q2.queue
-                    tlist2=[i for (i,j,k) in tmplist]
-                    if p_code not in tlist2:
-                        assert(len(c_node.parents)>=2)
-                        phi_decrease=c_node.phi/(len(c_node.parents)-1) - c_node.phi/len(c_node.parents)
-                        newdelta = c_node.delta / len(c_node.parents)
-                        Q2.put((p_code,phi_decrease,newdelta))
-
-        while not Q2.empty():
-            code,phi_decrease,newdelta=Q2.get()
-            node=self.tt_lookup(code)
-            if phi_decrease>0 or node.phi > newdelta:
-                if phi_decrease>0:
-                    node.delta -= phi_decrease
-                phi_decrease=0
-                if node.phi > newdelta:
-                    phi_decrease=(node.phi-newdelta)
-                    node.phi=newdelta
-                if len(node.parents)==0: continue
-                phi_decrease=phi_decrease/len(node.parents)
-                newdelta=node.delta/len(node.parents)
-                self.tt_write(code, node)
-                for p_code in node.parents:
-                    tlist2=[i for (i,j,k) in Q2.queue]
-                    if p_code not in tlist2:
-                        Q2.put((p_code, phi_decrease, newdelta))
-
-        Q = Queue.Queue()
-        Q.put(self.mHash)
+                    if p_code not in Q.queue:
+                        Q.put(p_code)
         while not Q.empty():
             code=Q.get()
             node=self.tt_lookup(code)
@@ -232,14 +211,13 @@ class FPNS:
                         Q.put(p_code)
 
 if __name__ == "__main__":
-
     pns=FPNS()
-    start=time.time()
-    state=[3,1]
-    toplay=HexColor.BLACK if len(state)%2==0 else HexColor.WHITE
+    start = time.time()
+    state = [3,0]
+    toplay = HexColor.BLACK if len(state) % 2 == 0 else HexColor.WHITE
     pns.pns(state, toplay)
-    end=time.time()
-    print("solving time:", (end-start))
+    end = time.time()
+    print("solving opening", state, " time:", (end - start), "\n")
 
     for i in range(0*BOARD_SIZE ** 2):
         pns2 = FPNS()

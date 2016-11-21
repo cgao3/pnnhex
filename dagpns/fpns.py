@@ -7,6 +7,7 @@ from zobrist.zobrist import *
 from dagpns.commons import *
 import Queue
 import copy
+import time
 
 INF = 2000000000.0
 EPSILON=1e-5
@@ -204,24 +205,13 @@ class FPNS:
                         Q.put(p_code)
 
 if __name__ == "__main__":
-    # s=[3, 4, 14, 2, 15]
-    # pnsf=PNSF()
-    # pnsf.mToplay=HexColor.WHITE
-    # res=pnsf.evaluate(s)
-    # print("res=",res)
-    pns=FPNS()
-    #s=[3,1]
-    #toplay=HexColor.BLACK if len(s)%2==0 else HexColor.WHITE
-    #pnsf.pns(s, toplay)
-    s=[3]
-    for i in [0,1,2,4,5,6,7,8,9,10,11,12,13,14,15]:
-        s.append(i)
-        toplay = HexColor.BLACK if len(s) % 2 == 0 else HexColor.WHITE
-        pns.pns(s,toplay)
-        s.remove(i)
-
-    for i in range(0*BOARD_SIZE ** 2):
+    for i in range(BOARD_SIZE ** 2):
         pns2 = FPNS()
         print("openning ", i)
+        start=time.time()
         state = [i]
+        toplay = HexColor.BLACK if len(state) % 2 == 0 else HexColor.WHITE
         pns2.pns(state, HexColor.WHITE)
+        end=time.time()
+        print("solving opening",i," time:",(end-start),"\n")
+

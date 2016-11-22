@@ -54,7 +54,7 @@ class DFPN:
         self.mTT={}
         self.node_cnt=self.mid_calls=0
         self.mHash=self.zhash.get_hash(intstate=state)
-        root = Node(phi=INF, delta=INF, code=self.mHash, children=None)
+        root = Node(phi=INF, delta=INF, children=None)
         self.tt_write(self.mHash, root)
         self.mNode=root
         print("root state:", state)
@@ -71,6 +71,7 @@ class DFPN:
 
     def MID(self, n):
         print("MID call: ", self.mid_calls, "state: ", self.mState, "toplay=", self.mToplay)
+        print(n.phi,n.delta)
         assert(len(self.mState)%2+1==self.mToplay)
         self.mid_calls +=1
         outcome, is_terminal=self.evaluate(self.mState)
@@ -83,8 +84,10 @@ class DFPN:
             else:
                 (n.phi, n.delta)=(INF, 0)
             self.tt_write(self.mHash, n)
+            print("terminal")
             return
 
+        print("before generating", n.children)
         n=self.generate_moves(n)
         print("after generating", n.children)
         phi_thre=self.deltaMin(n)
@@ -117,7 +120,7 @@ class DFPN:
                 n.children.append((child_code,move))
                 node=self.tt_lookup(child_code)
                 if not node:
-                    newnode=Node(phi=1, delta=1)
+                    newnode=Node(phi=1, delta=1, children=None)
                     self.tt_write(child_code, newnode)
                     self.node_cnt += 1
         self.tt_write(self.mHash, n)
@@ -134,8 +137,6 @@ class DFPN:
     def selectChild(self, n):
         best_delta=INF
         delta2=INF
-        best_phi=INF
-        best_child_code=None
         best_child_node=None
         best_move=None
         for child_code,move in n.children: 
@@ -146,14 +147,13 @@ class DFPN:
                 best_child_node=node
                 delta2=best_delta
                 best_delta=delta
-                best_phi=phi
                 best_move=move
             elif delta < delta2:
                 delta2 = delta
             if phi >= INF:
                 return node, delta2, move
 
-        return best_child_node, delta2, move
+        return best_child_node, delta2, best_move
 
     def phiSum(self, n):
         s=0

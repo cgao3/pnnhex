@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from __future__ import division
 
 from zobrist.zobrist import HexColor
-BOARD_SIZE=4
+BOARD_SIZE=3
 
 NORTH_EDGE=-1
 SOUTH_EDGE=-2

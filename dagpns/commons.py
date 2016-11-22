@@ -12,11 +12,13 @@ EAST_EDGE=-4
 
 
 class Node:
-    def __init__(self, code,phi, delta, parents=None):
+    #in df-pn, parent is the parent move that lead to this node
+    def __init__(self,code=None, phi=1, delta=1, parent=None, children=None):
+        self.code=code
         self.delta=delta
         self.phi=phi
-        self.code=code
-        self.parents=parents
+        self.parent=parent
+        self.children=children
 
 class FNode:
     def __init__(self, phi, delta, isexpanded, parents=None, children=None, estimated_updegree=None):

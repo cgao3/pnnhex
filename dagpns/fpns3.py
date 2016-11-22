@@ -86,7 +86,8 @@ class FPNS:
         s=0
         for child_code,move in n.children:
             node=self.tt_lookup(child_code)
-            k = len(node.parents)
+            k=len(node.parents) if node.isexpanded else (len(self.mState)+1)//2
+#k = len(node.parents)
             assert(k>0)
             if node.phi+EPSILON>INF: k = 1
             assert(node)
@@ -99,7 +100,8 @@ class FPNS:
         for child_code,move in n.children:
             node = self.tt_lookup(child_code)
             assert (node)
-            k=len(node.parents)
+            k=len(node.parents) if node.isexpanded else (len(self.mState)+1)//2
+#k=len(node.parents)
             assert(k>0)
             if node.delta+EPSILON>INF: k=1
             min_delta=min(min_delta, node.delta/k)
@@ -118,7 +120,8 @@ class FPNS:
                 assert(node)
                 e_delta=node.delta
                 if e_delta + EPSILON <INF and len(node.parents)!=0:
-                    e_delta = e_delta/len(node.parents)
+                    k=len(node.parents) if node.isexpanded else (len(self.mState)+1)//2
+                    e_delta = e_delta/k
                 if e_delta < best_val:
                     best_val = e_delta
                     best_move = move
@@ -209,15 +212,16 @@ if __name__ == "__main__":
 
 
     for i in range(BOARD_SIZE ** 2):
-        if i==3: continue
+        i=3
         pns2 = FPNS()
         print("openning ", i)
         start = time.time()
-        state = [3,i]
+        state = [i]
         toplay = HexColor.BLACK if len(state) % 2 == 0 else HexColor.WHITE
         pns2.pns(state, toplay)
         end = time.time()
         print("solving opening", i, " time:", (end - start), "\n")
+        break
 
     for i in range(0*BOARD_SIZE ** 2):
         pns2 = FPNS()

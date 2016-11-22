@@ -184,22 +184,36 @@ class FPNS:
         print("expanding ", self.mHash, "has", len(self.mNode.children), "nodes, ", existing, "existing")
 
     def update_ancesotrs(self):
-        Q2 = Queue.Queue()
+        Q=Queue.Queue()
+        Q.put((self.mHash, False, False))
         if len(self.mExisting)>0:
             for c_code in self.mExisting:
                 c_node=self.tt_lookup(c_code)
                 assert(c_node)
                 for p_code in c_node.parents:
-                    tmplist=Q2.queue
-                    tlist2=[i for (i,j,k) in tmplist]
-                    if p_code not in tlist2:
-                        assert(len(c_node.parents)>=2)
-                        phi_decrease=c_node.phi/(len(c_node.parents)-1) - c_node.phi/len(c_node.parents)
-                        newdelta = c_node.delta / len(c_node.parents)
-                        Q2.put((p_code,phi_decrease,newdelta))
+                    tlist2=[i for (i,j,k) in Q.queue]
+                    if p_code!=self.mHash and p_code not in tlist2:
+                        k=len(c_node.parents)
+                        assert(k>=2)
+                        phi_decrease=c_node.phi/(k-1) - c_node.phi/k
+                        newdelta = c_node.delta/k
+                        Q.put((p_code,phi_decrease,newdelta))
 
-        while not Q2.empty():
-            code,phi_decrease,newdelta=Q2.get()
+        while not Q.empty():
+            code,phi_decrease,newdelta=Q.get()
+            if phi_decrease==False:
+                node=self.tt_lookup(code)
+                oldphi, olddelta=node.phi, node.delta
+                p,d=self.deltaMin(node), self.phiSum(node)
+                if abs(p -oldphi) > EPSILON or abs(d-olddelta) >EPSILON:
+                    node.phi, node.delta=p,d
+                    self.tt_write(code, node)
+                    for p_code in node.parents:
+                        tlist2=[i for (i,j,k) in Q.queue]
+                        if p_code not in tlist2:
+                            Q.put((p_code,False,False))
+                continue
+
             node=self.tt_lookup(code)
             if phi_decrease>0 or node.phi > newdelta:
                 if phi_decrease>0:
@@ -213,29 +227,15 @@ class FPNS:
                 newdelta=node.delta/len(node.parents)
                 self.tt_write(code, node)
                 for p_code in node.parents:
-                    tlist2=[i for (i,j,k) in Q2.queue]
+                    tlist2=[i for (i,j,k) in Q.queue]
                     if p_code not in tlist2:
-                        Q2.put((p_code, phi_decrease, newdelta))
-
-        Q = Queue.Queue()
-        Q.put(self.mHash)
-        while not Q.empty():
-            code=Q.get()
-            node=self.tt_lookup(code)
-            oldphi, olddelta=node.phi, node.delta
-            p,d=self.deltaMin(node), self.phiSum(node)
-            if abs(p -oldphi) > EPSILON or abs(d-olddelta) >EPSILON:
-                node.phi, node.delta=p,d
-                self.tt_write(code, node)
-                for p_code in node.parents:
-                    if p_code not in Q.queue:
-                        Q.put(p_code)
+                        Q.put((p_code, phi_decrease, newdelta))
 
 if __name__ == "__main__":
 
     pns=FPNS()
     start=time.time()
-    state=[3,1]
+    state=[3]
     toplay=HexColor.BLACK if len(state)%2==0 else HexColor.WHITE
     pns.pns(state, toplay)
     end=time.time()

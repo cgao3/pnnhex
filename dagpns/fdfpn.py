@@ -10,7 +10,8 @@ import time
 
 import copy
 
-INF=200000000
+INF=200000000.0
+EPSILON=1e-5
 
 class DFPN:
     def __init__(self):
@@ -60,9 +61,9 @@ class DFPN:
         print("root state:", state)
         self.MID(root)
         print("1 for Black, 2 for White")
-        if(root.delta>=INF):
+        if(root.phi<EPSILON):
             print(toplay, " Win")
-        elif root.delta == 0:
+        elif root.delta+EPSILON>INF:
             print(HexColor.EMPTY-toplay, "Win")
         else:
             print("Unknown, something wrong?")
@@ -94,8 +95,12 @@ class DFPN:
         delta_thre=self.phiSum(n)
         while n.phi > phi_thre and n.delta > delta_thre:
             best_child_node, delta2, best_move=self.selectChild(n)
-            best_child_node.phi = n.delta - delta_thre + best_child_node.phi
-            best_child_node.delta=min(n.phi, delta2+1)
+            k=best_child_node.nparent
+            if best_child_node.phi + EPSILON > INF:
+                k=1
+            assert(k>=1)
+            best_child_node.phi = n.delta - delta_thre + best_child_node.phi/k
+            best_child_node.delta=min(n.phi, delta2+EPSILON)
             assert(best_move!=None)
             self.mState.append(best_move)
             self.mHash=self.zhash.update_hash(code=self.mHash, intmove=best_move, intplayer=self.mToplay)
@@ -121,9 +126,12 @@ class DFPN:
                 n.children.append((child_code,move))
                 node=self.tt_lookup(child_code)
                 if not node:
-                    newnode=Node(phi=1, delta=1, children=None)
+                    newnode=Node(phi=1, delta=1, nparent=1, children=None)
                     self.tt_write(child_code, newnode)
                     self.node_cnt += 1
+                else:
+                    node.nparent +=1
+                    self.tt_write(child_code,node)
         self.tt_write(self.mHash, n)
         return n
 
@@ -144,7 +152,10 @@ class DFPN:
         for child_code,move in n.children: 
             node=self.tt_lookup(child_code)
             assert(node) 
-            phi, delta=node.phi,node.delta
+            k=node.nparent
+            if node.phi +EPSILON >INF or node.delta+EPSILON>INF:
+                k=1
+            phi, delta=node.phi/k,node.delta/k
             if delta < best_delta: 
                 best_child_node=node
                 delta2=best_delta
@@ -162,7 +173,10 @@ class DFPN:
         for child_code,move in n.children:
             node=self.tt_lookup(child_code)
             assert(node)
-            s+=node.phi
+            k=node.nparent
+            if node.phi + EPSILON >INF:
+                k=1
+            s+=node.phi/k
         return s
 
     def deltaMin(self, n):
@@ -170,16 +184,20 @@ class DFPN:
         for child_code,move in n.children:
             node = self.tt_lookup(child_code)
             assert(node)
-            min_delta=min(min_delta, node.delta)
+            k=node.nparent
+            if node.delta + EPSILON >INF:
+                k=1
+            min_delta=min(min_delta, node.delta/k)
         return min_delta
 
 if __name__ == "__main__":
 
      pns2=DFPN()
-     for i in range(0,BOARD_SIZE**2):
+     for i in range(1,BOARD_SIZE**2):
+         if i==3: continue
          start=time.time()
          print("\nopenning ", i)
-         state=[3,i]
+         state=[3]
          toplay=HexColor.BLACK if len(state)%2==0 else HexColor.WHITE
          pns2.dfpns(state=state, toplay=toplay)
          end=time.time()

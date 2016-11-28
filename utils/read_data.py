@@ -14,6 +14,33 @@ INPUT_DEPTH = 3
 
 EVAL_BATCH_SIZE=5000
 
+#this class is for Supervised Learning
+#positions in the format B[a1] W[a2]
+class PositionUtil(object):
+    def __init__(self, positiondata_filename, batch_size):
+        self.data_file_name=positiondata_filename
+        self.batch_size=batch_size
+        self.reader=open(self.data_file_name, "r")
+        self.batch_positions=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint32)
+        self.batch_labels=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint16)
+
+    def close_file(self):
+        self.reader.close()
+
+    def prepare_batch(self):
+        self.batch_positions.fill(0)
+        self.batch_labels.fill(0)
+        for i in xrange(self.batch_size):
+            line=self.reader.readline()
+            if not line:
+                self.reader.seek(0)
+                line=self.reader.readline()
+
+    def convert(self, line):
+        
+        pass
+
+#this class is for reinforcement learning
 class data_util(object):
 
     def __init__(self, games=None, batch_size=None, batch_state=None, batch_label=None):

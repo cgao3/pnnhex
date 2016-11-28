@@ -6,8 +6,8 @@ import tensorflow as tf
 import time
 import numpy as np
 
-from layer import Layer
-from read_data import *
+from neuralnet.layer import Layer
+from utils.read_data import *
 from six.moves import xrange
 import os
 

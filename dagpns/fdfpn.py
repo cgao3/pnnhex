@@ -10,7 +10,8 @@ import time
 
 import copy
 
-INF=200000000
+INF=200000000.0
+EPSILON=1e-5
 
 class DFPN:
     def __init__(self):
@@ -59,10 +60,11 @@ class DFPN:
         self.mNode=root
         print("root state:", state)
         self.MID(root)
+        print("root.phi, delta", root.phi, root.delta)
         print("1 for Black, 2 for White")
-        if(root.delta>=INF):
+        if(root.phi<EPSILON):
             print(toplay, " Win")
-        elif root.delta == 0:
+        elif root.delta<EPSILON:
             print(HexColor.EMPTY-toplay, "Win")
         else:
             print("Unknown, something wrong?")
@@ -70,7 +72,7 @@ class DFPN:
         print("number nodes expanded: ", self.node_cnt, "MID calls:", self.mid_calls)
 
     def MID(self, n):
-        print("MID call: ", self.mid_calls, "state: ", self.mState, "toplay=", self.mToplay)
+        print("MID call: ", self.mid_calls, "state: ", self.mState, "toplay", self.mToplay, "node_cnt:", self.node_cnt)
         print(n.phi,n.delta)
         assert(len(self.mState)%2+1==self.mToplay)
         self.mid_calls +=1
@@ -90,12 +92,28 @@ class DFPN:
         print("before generating", n.children)
         self.generate_moves(n)
         print("after generating", n.children)
+        k=n.nparent
+        if k==0 or n.phi+EPSILON >INF or n.delta+EPSILON>INF: k=1
         phi_thre=self.deltaMin(n)
         delta_thre=self.phiSum(n)
+        print("phi_thre", phi_thre)
+        print("delta_thre", delta_thre)
+        print("n.phi,n.delta",n.phi,n.delta)
         while n.phi > phi_thre and n.delta > delta_thre:
+            print("n.phi,n.delta", n.phi, n.delta)
             best_child_node, delta2, best_move=self.selectChild(n)
-            best_child_node.phi = n.delta - delta_thre + best_child_node.phi
-            best_child_node.delta=min(n.phi, delta2+1)
+            print("best_child_node", best_child_node)
+            k=best_child_node.nparent
+            if best_child_node.phi + EPSILON > INF or best_child_node.delta +EPSILON >INF:
+                k=1
+            assert(k>=1)
+            best_child_node.phi = (n.delta - delta_thre)/k + best_child_node.phi
+            e_delta=best_child_node.delta/k
+            assert(n.phi > e_delta)
+            print("e_delta", e_delta, "delta2", delta2, "n.phi", n.phi)
+            assert(delta2 >= delta2)
+            olddelta=best_child_node.delta
+            best_child_node.delta=min(INF, (n.phi-e_delta)*k+olddelta, olddelta+(delta2-e_delta)*k+1)
             assert(best_move!=None)
             self.mState.append(best_move)
             self.mHash=self.zhash.update_hash(code=self.mHash, intmove=best_move, intplayer=self.mToplay)
@@ -104,11 +122,16 @@ class DFPN:
             self.mState.remove(best_move)
             self.mToplay = HexColor.EMPTY - self.mToplay
             self.mHash = self.zhash.update_hash(code=self.mHash, intmove=best_move, intplayer=self.mToplay)
+            k=n.nparent
+            if k==0 or n.phi+EPSILON >INF or n.delta+EPSILON>INF: k=1
             phi_thre=self.deltaMin(n)
             delta_thre=self.phiSum(n)
         n.phi=self.deltaMin(n)
         n.delta=self.phiSum(n)
         self.tt_write(self.mHash, n)
+        print("write...")
+
+
 
     #write new positions to TT
     def generate_moves(self, n):
@@ -121,9 +144,12 @@ class DFPN:
                 n.children.append((child_code,move))
                 node=self.tt_lookup(child_code)
                 if not node:
-                    newnode=Node(phi=1, delta=1, children=None)
+                    newnode=Node(phi=1, delta=1, nparent=1, children=None)
                     self.tt_write(child_code, newnode)
                     self.node_cnt += 1
+                else:
+                    node.nparent +=1
+                    self.tt_write(child_code,node)
         self.tt_write(self.mHash, n)
         return n
 
@@ -137,32 +163,39 @@ class DFPN:
             return False
 
     def selectChild(self, n):
-        best_delta=INF
-        delta2=INF
+        best_e_delta=INF
+        e_delta2=INF
         best_child_node=None
         best_move=None
         for child_code,move in n.children: 
             node=self.tt_lookup(child_code)
             assert(node) 
-            phi, delta=node.phi,node.delta
-            if delta < best_delta: 
+            k=node.nparent
+            if node.phi +EPSILON >INF or node.delta+EPSILON>INF:
+                k=1
+            ephi, edelta=node.phi/k,node.delta/k
+            print("k=",k, "phi,delta",ephi,edelta, "move",move)
+            if edelta < best_e_delta: 
                 best_child_node=node
-                delta2=best_delta
-                best_delta=delta
+                e_delta2=best_e_delta
+                best_e_delta=edelta
                 best_move=move
-            elif delta < delta2:
-                delta2 = delta
-            if phi >= INF:
-                return node, delta2, move
+            elif edelta < e_delta2:
+                e_delta2 = edelta
+            if node.phi >= INF:
+                return node, e_delta2, move
 
-        return best_child_node, delta2, best_move
+        return best_child_node, e_delta2, best_move
 
     def phiSum(self, n):
         s=0
         for child_code,move in n.children:
             node=self.tt_lookup(child_code)
             assert(node)
-            s+=node.phi
+            k=node.nparent
+            if node.phi + EPSILON >INF:
+                k=1
+            s+=node.phi/k
         return s
 
     def deltaMin(self, n):
@@ -170,16 +203,20 @@ class DFPN:
         for child_code,move in n.children:
             node = self.tt_lookup(child_code)
             assert(node)
-            min_delta=min(min_delta, node.delta)
+            k=node.nparent
+            if node.delta + EPSILON >INF:
+                k=1
+            min_delta=min(min_delta, node.delta/k)
         return min_delta
 
 if __name__ == "__main__":
 
      pns2=DFPN()
-     for i in range(0,BOARD_SIZE**2):
+     for i in range(1,BOARD_SIZE**2):
+         if i==3: continue
          start=time.time()
          print("\nopenning ", i)
-         state=[3,i]
+         state=[2]
          toplay=HexColor.BLACK if len(state)%2==0 else HexColor.WHITE
          pns2.dfpns(state=state, toplay=toplay)
          end=time.time()

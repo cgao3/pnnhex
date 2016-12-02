@@ -23,6 +23,13 @@ tf.flags.DEFINE_string("summaries_dir","/tmp/slnet_logs", "where the summaries a
 
 FLAGS = tf.app.flags.FLAGS
 
+'''game positions supervised learning'''
+class SLNet(object):
+
+    def __init__(self, srcTrainDataPath, srcTestDataPath):
+        self.srcTrainPath=srcTestDataPath
+        self.srcTestPath=srcTestDataPath
+
 class SLNetwork(object):
     '''
     The first layer is input layer, using VALID padding, the rest use SAME padding

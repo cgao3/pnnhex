@@ -7,6 +7,8 @@ from six.moves import xrange
 
 import numpy as np
 
+from zobrist.zobrist import *
+
 BOARD_SIZE = 8
 BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
@@ -35,10 +37,34 @@ class PositionUtil(object):
             if not line:
                 self.reader.seek(0)
                 line=self.reader.readline()
+            self._build_batch_at(i, line)
 
-    def convert(self, line):
-        
-        pass
+    def _build_batch_at(self, kth, line):
+        arr=line.strip().split()
+        pair=self._toIntPair(arr[-1])
+        self.batch_labels[kth]=pair[0]*BOARD_SIZE+pair[1]
+        self.batch_positions[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
+        # black occupied
+        self.batch_positions[kth, 0:INPUT_WIDTH, 0, 0] = 1
+        self.batch_positions[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
+        # white occupied
+        self.batch_positions[kth, 0, 1:INPUT_WIDTH - 1, 1] = 1
+        self.batch_positions[kth, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
+        raws=arr[0:-1]
+        turn=HexColor.BLACK
+        for raw in raws:
+            (x,y)=self._toIntPair(raw)
+            x,y=x+1,y+1
+            ind=0 if turn==HexColor.BLACK else 1
+            self.batch_positions[kth,x,y, ind]=x*BOARD_SIZE+y
+            self.batch_positions[kth,x,y, INPUT_DEPTH-1]=0
+            turn=HexColor.EMPTY-turn
+
+    #B[c3]=> c3 => ('c-'a')*boardsize+(3-1) , W[a11]=> a11
+    def _toIntPair(self, raw):
+        x=ord(raw[2].lower())-ord('a')
+        y=int(raw[3:-1])
+        return (x,y)
 
 #this class is for reinforcement learning
 class data_util(object):

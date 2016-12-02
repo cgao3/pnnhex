@@ -10,9 +10,10 @@ import time
 
 import copy
 
-INF=200000000.0
+INF=200000000
 EPSILON=1e-5
 
+#only use the fractional idea when selecting MPN
 class DFPN:
     def __init__(self):
         self.mHash=None
@@ -92,8 +93,6 @@ class DFPN:
         print("before generating", n.children)
         self.generate_moves(n)
         print("after generating", n.children)
-        k=n.nparent
-        if k==0 or n.phi+EPSILON >INF or n.delta+EPSILON>INF: k=1
         phi_thre=self.deltaMin(n)
         delta_thre=self.phiSum(n)
         print("phi_thre", phi_thre)
@@ -102,21 +101,10 @@ class DFPN:
         while n.phi > phi_thre and n.delta > delta_thre:
             print("n.phi,n.delta", n.phi, n.delta)
             best_child_node, delta2, best_move=self.selectChild(n)
-            print("best_child_node", best_child_node)
-            k=best_child_node.nparent
-            if best_child_node.phi + EPSILON > INF or best_child_node.delta +EPSILON >INF:
-                k=1
-            assert(k>=1)
-            best_child_node.phi = (n.delta - delta_thre)/k + best_child_node.phi
-            e_delta=best_child_node.delta/k
-            assert(n.phi > e_delta)
-            print("e_delta", e_delta, "delta2", delta2, "n.phi", n.phi)
-            assert(delta2 >= delta2)
-            olddelta=best_child_node.delta
-            if delta2+EPSILON >INF:
-                best_child_node.delta=min(INF,(n.phi-e_delta)*k+olddelta)
-            else:
-                best_child_node.delta=min(INF, (n.phi-e_delta)*k+olddelta, olddelta+(delta2-e_delta)*k+1)
+            print("best_child_node", best_child_node.phi, best_child_node.delta)
+            print("delta2", delta2)
+            best_child_node.phi = n.delta - delta_thre + best_child_node.phi
+            best_child_node.delta=min(n.phi, delta2+1)
             assert(best_move!=None)
             self.mState.append(best_move)
             self.mHash=self.zhash.update_hash(code=self.mHash, intmove=best_move, intplayer=self.mToplay)
@@ -125,8 +113,6 @@ class DFPN:
             self.mState.remove(best_move)
             self.mToplay = HexColor.EMPTY - self.mToplay
             self.mHash = self.zhash.update_hash(code=self.mHash, intmove=best_move, intplayer=self.mToplay)
-            k=n.nparent
-            if k==0 or n.phi+EPSILON >INF or n.delta+EPSILON>INF: k=1
             phi_thre=self.deltaMin(n)
             delta_thre=self.phiSum(n)
         n.phi=self.deltaMin(n)
@@ -149,7 +135,7 @@ class DFPN:
                     self.tt_write(child_code, newnode)
                     self.node_cnt += 1
                 else:
-                    node.nparent = 1
+                    node.nparent += 1
                     self.tt_write(child_code,node)
         self.tt_write(self.mHash, n)
         return n
@@ -173,37 +159,31 @@ class DFPN:
         for child_code,move in n.children: 
             node=self.tt_lookup(child_code)
             assert(node) 
-            k=node.nparent
-            if node.phi +EPSILON >INF or node.delta+EPSILON>INF:
-                k=1
-            ephi, edelta=node.phi/k,node.delta/k
-            print("k=",k, "phi,delta",ephi,edelta, "move",move)
-            if edelta < best_e_delta: 
+            ephi, edelta=node.phi,node.delta
+            if edelta==delta1:
+                if best_child_node and best_child_node.nparent<node.nparent:
+                    best_child_node=node
+                    best_move=move
+            if edelta < best_e_delta and node.delta < n.phi: 
                 delta2=delta1
                 delta1=node.delta
                 best_child_node=node
                 e_delta2=best_e_delta
                 best_e_delta=edelta
                 best_move=move
-            elif edelta < e_delta2:
-                e_delta2 = edelta
+            elif delta2>node.delta:
                 delta2=node.delta
             if node.phi >= INF:
-#return node, delta2, move
-                return node, e_delta2, move
+                return node, delta2, move
 
-#return best_child_node, delta2, best_move
-        return best_child_node, e_delta2, best_move
+        return best_child_node, delta2, best_move
 
     def phiSum(self, n):
         s=0
         for child_code,move in n.children:
             node=self.tt_lookup(child_code)
             assert(node)
-            k=node.nparent
-            if node.phi + EPSILON >INF:
-                k=1
-            s+=node.phi/k
+            s+=node.phi
         return s
 
     def deltaMin(self, n):
@@ -211,10 +191,7 @@ class DFPN:
         for child_code,move in n.children:
             node = self.tt_lookup(child_code)
             assert(node)
-            k=node.nparent
-            if node.delta + EPSILON >INF:
-                k=1
-            min_delta=min(min_delta, node.delta/k)
+            min_delta=min(min_delta, node.delta)
         return min_delta
 
 if __name__ == "__main__":
@@ -224,7 +201,7 @@ if __name__ == "__main__":
          if i==3: continue
          start=time.time()
          print("\nopenning ", i)
-         state=[3,6]
+         state=[3,2]
          toplay=HexColor.BLACK if len(state)%2==0 else HexColor.WHITE
          pns2.dfpns(state=state, toplay=toplay)
          end=time.time()

@@ -14,7 +14,7 @@ BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 3
 
-EVAL_BATCH_SIZE=5000
+EVAL_BATCH_SIZE=50
 
 #this class is for Supervised Learning
 #positions in the format B[a1] W[a2]
@@ -24,7 +24,9 @@ class PositionUtil(object):
         self.batch_size=batch_size
         self.reader=open(self.data_file_name, "r")
         self.batch_positions=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint32)
-        self.batch_labels=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint16)
+        self.batch_labels=np.ndarray(shape=(batch_size,), dtype=np.uint16)
+
+        self.currentLine=0
 
     def close_file(self):
         self.reader.close()
@@ -32,17 +34,23 @@ class PositionUtil(object):
     def prepare_batch(self):
         self.batch_positions.fill(0)
         self.batch_labels.fill(0)
+        nextEpoch=False
         for i in xrange(self.batch_size):
             line=self.reader.readline()
-            if not line:
+            line=line.strip()
+            if len(line)==0:
+                self.currentLine=0
                 self.reader.seek(0)
                 line=self.reader.readline()
+                nextEpoch=True
             self._build_batch_at(i, line)
+            self.currentLine +=1
+        return nextEpoch
 
     def _build_batch_at(self, kth, line):
         arr=line.strip().split()
-        pair=self._toIntPair(arr[-1])
-        self.batch_labels[kth]=pair[0]*BOARD_SIZE+pair[1]
+        (x,y)=self._toIntPair(arr[-1])
+        self.batch_labels[kth]=x*BOARD_SIZE+y
         self.batch_positions[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
         # black occupied
         self.batch_positions[kth, 0:INPUT_WIDTH, 0, 0] = 1
@@ -63,7 +71,7 @@ class PositionUtil(object):
     #B[c3]=> c3 => ('c-'a')*boardsize+(3-1) , W[a11]=> a11
     def _toIntPair(self, raw):
         x=ord(raw[2].lower())-ord('a')
-        y=int(raw[3:-1])
+        y=int(raw[3:-1])-1
         return (x,y)
 
 #this class is for reinforcement learning
@@ -172,15 +180,8 @@ class data_util(object):
         return (new_offset1, new_offset2, next_epoch)
 
 if __name__ == "__main__":
-    datatest=data_util()
-    datatest.load_offline_data("data/7x7rawgames.dat", train_data=True)
-    offset1 = 0
-    offset2 = 0
-    nepoch=0
-    while(nepoch <= 1):
-        o1, o2, next_epoch= datatest.prepare_batch(offset1, offset2)
-        offset1 = o1
-        offset2 = o2
-        print("epoch", nepoch, "offset: ", o1, o2)
-        if(next_epoch):
-            nepoch += 1
+    datatest=PositionUtil(positiondata_filename="data/8x8/positions1.txt", batch_size=BATCH_SIZE)
+    nextEpoch=False
+    while nextEpoch==False:
+        nextEpoch=datatest.prepare_batch()
+        print("offset ", datatest.reader.tell(), "line:", datatest.currentLine)

@@ -24,11 +24,83 @@ tf.flags.DEFINE_string("summaries_dir","/tmp/slnet_logs", "where the summaries a
 FLAGS = tf.app.flags.FLAGS
 
 '''game positions supervised learning'''
-class SLNet(object):
+class SupervisedNet(object):
 
     def __init__(self, srcTrainDataPath, srcTestDataPath):
-        self.srcTrainPath=srcTestDataPath
+        self.srcTrainPath=srcTrainDataPath
         self.srcTestPath=srcTestDataPath
+
+    def _setup_architecture(self, nLayers):
+        self.nLayers=nLayers
+        self.inputLayer=Layer("InputLayer", paddingMethod="VALID")
+        self.convLayers=[Layer("ConvLayer%d"%i) for i in xrange(nLayers)]
+
+    def model(self, dataNode, kernalSize=(3,3), kernalDepth=80):
+        weightShape=kernalSize+(INPUT_DEPTH, kernalDepth)
+        output=self.inputLayer.convolve(dataNode, weight_shape=weightShape, bias_shape=(kernalDepth,))
+
+        weightShape=kernalSize+(kernalDepth, kernalDepth)
+        for i in xrange(self.nLayers):
+            out=self.convLayers[i].convolve(output, weight_shape=weightShape, bias_shape=(kernalDepth,))
+            output=out
+        logits=self.convLayers[self.nLayers-1].move_logits(output, BOARD_SIZE)
+        return logits
+
+    def train(self, nSteps):
+        self.trainInputNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),name="BatchTrainInputNode")
+        self.trainLabelNode = tf.placeholder(dtype=tf.int32, shape=(BATCH_SIZE,), name="BatchTrainLabelNode")
+        self.testInputNode = tf.placeholder(dtype=tf.float32, shape=(EVAL_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="BatchTestInputNode")
+        self.testLabelNode = tf.placeholder(dtype=tf.int32, shape=(EVAL_BATCH_SIZE,), name="BatchTestLabelNode")
+
+        self._setup_architecture(nLayers=6)
+        logits=self.model(self.trainInputNode)
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, self.trainLabelNode))
+        opt=tf.train.AdamOptimizer().minimize(loss)
+        train_prediction=tf.nn.softmax(logits)
+
+        tf.get_variable_scope().reuse_variables()
+        eval_prediction=tf.nn.softmax(self.model(self.testInputNode))
+        trainDataUtil = PositionUtil(positiondata_filename=self.srcTrainPath, batch_size=BATCH_SIZE)
+        testDataUtil = PositionUtil(positiondata_filename=self.srcTestPath, batch_size=EVAL_BATCH_SIZE)
+
+        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="XInputNode")
+        self.xLogits=self.model(self.xInputNode)
+
+        saver=tf.train.Saver()
+        print_frequency=20
+        test_frequency=50
+        step=0
+        epoch_num=0
+        with tf.Session() as sess:
+            init=tf.initialize_all_variables()
+            sess.run(init)
+            print("Initialized all variables!")
+            while step < nSteps:
+                nextEpoch=trainDataUtil.prepare_batch()
+                if nextEpoch: epoch_num += 1
+                inputs=trainDataUtil.batch_positions.astype(np.float32)
+                label=trainDataUtil.batch_labels.astype(np.uint16)
+                feed_dictionary={self.trainInputNode:inputs, self.trainLabelNode:label}
+                _, run_loss, run_prediction=sess.run([opt, loss, train_prediction], feed_dict=feed_dictionary)
+
+                if step % print_frequency:
+                    print("epoch: ", epoch_num, "loss:", run_loss, "error_rate:", error_rate(run_prediction,trainDataUtil.batch_labels) )
+
+                if step % test_frequency == 0:
+                    testDataUtil.prepare_batch()
+                    x = testDataUtil.batch_positions.astype(np.float32)
+                    y = testDataUtil.batch_labels.astype(np.int32)
+                    feed_d = {self.testInputNode: x, self.testLabelNode: y}
+                    predict = sess.run(eval_prediction, feed_dict=feed_d)
+                    print_error = error_rate(predict, testDataUtil.batch_labels)
+                    print("evaluation error rate", print_error)
+                    #summary = sess.run(error_test_sum, feed_dict={error_rate_placeholder: print_error})
+                    #test_writer.add_summary(summary, step)
+                step += 1
+
+        trainDataUtil.close_file()
+        testDataUtil.close_file()
+
 
 class SLNetwork(object):
     '''
@@ -48,7 +120,7 @@ class SLNetwork(object):
             self.conv_layer[i] = Layer("conv%d_layer" % i)
 
     #will reue this model for evaluation
-    def model(self, data_node, kernal_size=(3,3), kernal_depth=128, value_net=False):
+    def model(self, data_node, kernal_size=(3,3), kernal_depth=64, value_net=False):
         output = [None] * self.num_hidden_layer
         weightShape0=kernal_size+(INPUT_DEPTH, kernal_depth)
         output[0]=self.input_layer.convolve(data_node, weight_shape=weightShape0, bias_shape=(kernal_depth,))
@@ -62,9 +134,7 @@ class SLNetwork(object):
 
         return logits
 
-
     def train(self, num_epochs):
-           
         self.train_data_node = tf.placeholder(tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="batch_train_input_node")
         self.train_labels_node = tf.placeholder(tf.int32, shape=(BATCH_SIZE,), name="batch_train_label_node")
         self.eval_data_node = tf.placeholder(tf.float32, shape=(EVAL_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="batch_test_input_node")
@@ -151,13 +221,8 @@ def error_rate(predictions, labels):
     return 100.0 - 100.0 * np.sum(np.argmax(predictions, 1) == labels) / predictions.shape[0]
 
 def main(argv=None):
-    if FLAGS.saving_graph == False:
-        supervisedlearn=SLNetwork(TRAIN_DATA_PATH, TEST_DATA_PATH)
-        num_epochs=FLAGS.num_epoch
-        supervisedlearn.train(num_epochs)
-    else:
-        supervised=SLNetwork()
-        supervised.save_graph()
+   slnet=SupervisedNet(srcTrainDataPath="data/8x8/positions1.txt", srcTestDataPath="data/8x8/test_positions.txt")
+   slnet.train(10000)
 
 if __name__ == "__main__":
     tf.app.run()

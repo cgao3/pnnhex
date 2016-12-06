@@ -11,13 +11,9 @@ from utils.read_data import *
 from six.moves import xrange
 import os
 
-TRAIN_DATA_PATH="data/8x8rawgames.dat"
-TEST_DATA_PATH="data/test8x8games.dat"
-
 MODELS_DIR="models/"
 SLMODEL_NAME="slmodel.ckpt"
 
-tf.app.flags.DEFINE_boolean("saving_graph", False, "True if just to save the computation graph")
 tf.app.flags.DEFINE_integer("num_epoch", 400, "number of epoches")
 tf.flags.DEFINE_string("summaries_dir","/tmp/slnet_logs", "where the summaries are")
 
@@ -66,6 +62,11 @@ class SupervisedNet(object):
         self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="XInputNode")
         self.xLogits=self.model(self.xInputNode)
 
+        accuracyPlaceholder = tf.placeholder(tf.float32)
+        accuracyTrainSummary = tf.scalar_summary("Accuracy (Training)", accuracyPlaceholder)
+        accuracyValidateSummary = tf.scalar_summary("Accuracy (Validating)", accuracyPlaceholder)
+        accuracyTestSummary = tf.scalar_summary("Accuracy (Test)", accuracyPlaceholder)
+
         saver=tf.train.Saver()
         print_frequency=20
         test_frequency=50
@@ -75,6 +76,8 @@ class SupervisedNet(object):
             init=tf.initialize_all_variables()
             sess.run(init)
             print("Initialized all variables!")
+            trainWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/train", sess.graph)
+            validateWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/validate", sess.graph)
             while step < nSteps:
                 nextEpoch=trainDataUtil.prepare_batch()
                 if nextEpoch: epoch_num += 1
@@ -84,19 +87,27 @@ class SupervisedNet(object):
                 _, run_loss, run_prediction=sess.run([opt, loss, train_prediction], feed_dict=feed_dictionary)
 
                 if step % print_frequency:
-                    print("epoch: ", epoch_num, "loss:", run_loss, "error_rate:", error_rate(run_prediction,trainDataUtil.batch_labels) )
-
+                    run_error=error_rate(run_prediction,trainDataUtil.batch_labels)
+                    print("epoch: ", epoch_num, "loss:", run_loss, "error_rate:", run_error )
+                    summary = sess.run(accuracyTrainSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
+                    trainWriter.add_summary(summary, step)
                 if step % test_frequency == 0:
                     testDataUtil.prepare_batch()
                     x = testDataUtil.batch_positions.astype(np.float32)
                     y = testDataUtil.batch_labels.astype(np.int32)
                     feed_d = {self.testInputNode: x, self.testLabelNode: y}
                     predict = sess.run(eval_prediction, feed_dict=feed_d)
-                    print_error = error_rate(predict, testDataUtil.batch_labels)
-                    print("evaluation error rate", print_error)
-                    #summary = sess.run(error_test_sum, feed_dict={error_rate_placeholder: print_error})
-                    #test_writer.add_summary(summary, step)
+                    run_error = error_rate(predict, testDataUtil.batch_labels)
+                    print("evaluation error rate", run_error)
+                    summary = sess.run(accuracyValidateSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
+                    validateWriter.add_summary(summary, step)
+
                 step += 1
+            print("saving computation graph for c++ inference")
+            sl_model_dir = os.path.dirname(MODELS_DIR)
+            tf.train.write_graph(sess.graph_def, sl_model_dir, "graph.pbtxt")
+            tf.train.write_graph(sess.graph_def, sl_model_dir, "graph.pb", as_text=False)
+            saver.save(sess, os.path.join(sl_model_dir, SLMODEL_NAME), global_step=step)
 
         trainDataUtil.close_file()
         testDataUtil.close_file()
@@ -221,8 +232,9 @@ def error_rate(predictions, labels):
     return 100.0 - 100.0 * np.sum(np.argmax(predictions, 1) == labels) / predictions.shape[0]
 
 def main(argv=None):
-   slnet=SupervisedNet(srcTrainDataPath="data/8x8/positions1.txt", srcTestDataPath="data/8x8/test_positions.txt")
-   slnet.train(10000)
+   slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train.txt",
+                       srcTestDataPath="storage/position-action/8x8/validate.txt")
+   slnet.train(12000)
 
 if __name__ == "__main__":
     tf.app.run()

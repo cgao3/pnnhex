@@ -14,7 +14,7 @@ BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 3
 
-EVAL_BATCH_SIZE=50
+EVAL_BATCH_SIZE=4400
 
 #this class is for Supervised Learning
 #positions in the format B[a1] W[a2]
@@ -64,7 +64,7 @@ class PositionUtil(object):
             (x,y)=self._toIntPair(raw)
             x,y=x+1,y+1
             ind=0 if turn==HexColor.BLACK else 1
-            self.batch_positions[kth,x,y, ind]=x*BOARD_SIZE+y
+            self.batch_positions[kth,x,y, ind]=1
             self.batch_positions[kth,x,y, INPUT_DEPTH-1]=0
             turn=HexColor.EMPTY-turn
 

@@ -8,7 +8,7 @@ import numpy as np
 
 from neuralnet.layer import Layer
 from utils.read_data import *
-from six.moves import xrange
+from six.moves import xrange;
 import os
 
 MODELS_DIR="models/"
@@ -22,16 +22,17 @@ FLAGS = tf.app.flags.FLAGS
 '''game positions supervised learning'''
 class SupervisedNet(object):
 
-    def __init__(self, srcTrainDataPath, srcTestDataPath):
+    def __init__(self, srcTrainDataPath, srcTestDataPath, srcTestPathFinal=None):
         self.srcTrainPath=srcTrainDataPath
         self.srcTestPath=srcTestDataPath
+        self.srcTestPathFinal=srcTestPathFinal
 
     def _setup_architecture(self, nLayers):
         self.nLayers=nLayers
         self.inputLayer=Layer("InputLayer", paddingMethod="VALID")
         self.convLayers=[Layer("ConvLayer%d"%i) for i in xrange(nLayers)]
 
-    def model(self, dataNode, kernalSize=(3,3), kernalDepth=80):
+    def model(self, dataNode, kernalSize=(3,3), kernalDepth=64):
         weightShape=kernalSize+(INPUT_DEPTH, kernalDepth)
         output=self.inputLayer.convolve(dataNode, weight_shape=weightShape, bias_shape=(kernalDepth,))
 
@@ -65,7 +66,6 @@ class SupervisedNet(object):
         accuracyPlaceholder = tf.placeholder(tf.float32)
         accuracyTrainSummary = tf.scalar_summary("Accuracy (Training)", accuracyPlaceholder)
         accuracyValidateSummary = tf.scalar_summary("Accuracy (Validating)", accuracyPlaceholder)
-        accuracyTestSummary = tf.scalar_summary("Accuracy (Test)", accuracyPlaceholder)
 
         saver=tf.train.Saver()
         print_frequency=20
@@ -76,8 +76,10 @@ class SupervisedNet(object):
             init=tf.initialize_all_variables()
             sess.run(init)
             print("Initialized all variables!")
-            trainWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/train", sess.graph)
-            validateWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/validate", sess.graph)
+            trainWriter = tf.summary.FileWriter(FLAGS.summaries_dir+"/train", sess.graph)
+            validateWriter = tf.summary.FileWriter(FLAGS.summaries_dir + "/validate", sess.graph)
+            #trainWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/train", sess.graph)
+            #validateWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/validate", sess.graph)
             while step < nSteps:
                 nextEpoch=trainDataUtil.prepare_batch()
                 if nextEpoch: epoch_num += 1
@@ -92,12 +94,19 @@ class SupervisedNet(object):
                     summary = sess.run(accuracyTrainSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
                     trainWriter.add_summary(summary, step)
                 if step % test_frequency == 0:
-                    testDataUtil.prepare_batch()
-                    x = testDataUtil.batch_positions.astype(np.float32)
-                    y = testDataUtil.batch_labels.astype(np.int32)
-                    feed_d = {self.testInputNode: x, self.testLabelNode: y}
-                    predict = sess.run(eval_prediction, feed_dict=feed_d)
-                    run_error = error_rate(predict, testDataUtil.batch_labels)
+                    hasOneEpoch=False
+                    sum_run_error=0.0
+                    ite=0
+                    while hasOneEpoch==False:
+                        hasOneEpoch=testDataUtil.prepare_batch()
+                        x = testDataUtil.batch_positions.astype(np.float32)
+                        y = testDataUtil.batch_labels.astype(np.int32)
+                        feed_d = {self.testInputNode: x, self.testLabelNode: y}
+                        predict = sess.run(eval_prediction, feed_dict=feed_d)
+                        run_error = error_rate(predict, testDataUtil.batch_labels)
+                        sum_run_error += run_error
+                        ite +=1
+                    run_error=sum_run_error/ite
                     print("evaluation error rate", run_error)
                     summary = sess.run(accuracyValidateSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
                     validateWriter.add_summary(summary, step)
@@ -109,6 +118,22 @@ class SupervisedNet(object):
             tf.train.write_graph(sess.graph_def, sl_model_dir, "graph.pb", as_text=False)
             saver.save(sess, os.path.join(sl_model_dir, SLMODEL_NAME), global_step=step)
 
+            print("Testing error on test data is:")
+            testDataUtil.close_file()
+            testDataUtil=PositionUtil(positiondata_filename=self.srcTestPathFinal, batch_size=EVAL_BATCH_SIZE)
+            hasOneEpoch=False
+            sum_run_error=0.0
+            ite=0
+            while hasOneEpoch==False:
+                hasOneEpoch = testDataUtil.prepare_batch()
+                x = testDataUtil.batch_positions.astype(np.float32)
+                y = testDataUtil.batch_labels.astype(np.int32)
+                feed_d = {self.testInputNode: x, self.testLabelNode: y}
+                predict = sess.run(eval_prediction, feed_dict=feed_d)
+                run_error = error_rate(predict, testDataUtil.batch_labels)
+                sum_run_error += run_error
+                ite += 1
+            print("Testing error is:", sum_run_error/ite)
         trainDataUtil.close_file()
         testDataUtil.close_file()
 
@@ -233,7 +258,8 @@ def error_rate(predictions, labels):
 
 def main(argv=None):
    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train.txt",
-                       srcTestDataPath="storage/position-action/8x8/validate.txt")
+                       srcTestDataPath="storage/position-action/8x8/validate.txt",
+                       srcTestPathFinal="storage/position-action/8x8/test.txt")
    slnet.train(12000)
 
 if __name__ == "__main__":

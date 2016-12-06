@@ -14,7 +14,7 @@ BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 3
 
-EVAL_BATCH_SIZE=4400
+EVAL_BATCH_SIZE=440
 
 #this class is for Supervised Learning
 #positions in the format B[a1] W[a2]

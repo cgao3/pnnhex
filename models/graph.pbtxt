@@ -2725,445 +2725,7 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/weight"
-  op: "Variable"
-  attr {
-    key: "container"
-    value {
-      s: ""
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "shape"
-    value {
-      shape {
-        dim {
-          size: 3
-        }
-        dim {
-          size: 3
-        }
-        dim {
-          size: 64
-        }
-        dim {
-          size: 64
-        }
-      }
-    }
-  }
-  attr {
-    key: "shared_name"
-    value {
-      s: ""
-    }
-  }
-}
-node {
-  name: "ConvLayer5/weight/Initializer/truncated_normal/shape"
-  op: "Const"
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/weight"
-      }
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-            size: 4
-          }
-        }
-        tensor_content: "\003\000\000\000\003\000\000\000@\000\000\000@\000\000\000"
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/weight/Initializer/truncated_normal/mean"
-  op: "Const"
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/weight"
-      }
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_FLOAT
-        tensor_shape {
-        }
-        float_val: 0.0
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/weight/Initializer/truncated_normal/stddev"
-  op: "Const"
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/weight"
-      }
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_FLOAT
-        tensor_shape {
-        }
-        float_val: 0.10000000149
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/weight/Initializer/truncated_normal/TruncatedNormal"
-  op: "TruncatedNormal"
-  input: "ConvLayer5/weight/Initializer/truncated_normal/shape"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/weight"
-      }
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "seed"
-    value {
-      i: 0
-    }
-  }
-  attr {
-    key: "seed2"
-    value {
-      i: 0
-    }
-  }
-}
-node {
-  name: "ConvLayer5/weight/Initializer/truncated_normal/mul"
-  op: "Mul"
-  input: "ConvLayer5/weight/Initializer/truncated_normal/TruncatedNormal"
-  input: "ConvLayer5/weight/Initializer/truncated_normal/stddev"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/weight"
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/weight/Initializer/truncated_normal"
-  op: "Add"
-  input: "ConvLayer5/weight/Initializer/truncated_normal/mul"
-  input: "ConvLayer5/weight/Initializer/truncated_normal/mean"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/weight"
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/weight/Assign"
-  op: "Assign"
-  input: "ConvLayer5/weight"
-  input: "ConvLayer5/weight/Initializer/truncated_normal"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/weight"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5/weight/read"
-  op: "Identity"
-  input: "ConvLayer5/weight"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/weight"
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/bias"
-  op: "Variable"
-  attr {
-    key: "container"
-    value {
-      s: ""
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "shape"
-    value {
-      shape {
-        dim {
-          size: 64
-        }
-      }
-    }
-  }
-  attr {
-    key: "shared_name"
-    value {
-      s: ""
-    }
-  }
-}
-node {
-  name: "ConvLayer5/bias/Initializer/Const"
-  op: "Const"
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/bias"
-      }
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_FLOAT
-        tensor_shape {
-          dim {
-            size: 64
-          }
-        }
-        float_val: 0.0
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/bias/Assign"
-  op: "Assign"
-  input: "ConvLayer5/bias"
-  input: "ConvLayer5/bias/Initializer/Const"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/bias"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5/bias/read"
-  op: "Identity"
-  input: "ConvLayer5/bias"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/bias"
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/Conv2D"
-  op: "Conv2D"
-  input: "ConvLayer4/Relu"
-  input: "ConvLayer5/weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5/add"
-  op: "Add"
-  input: "ConvLayer5/Conv2D"
-  input: "ConvLayer5/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer5/Relu"
-  op: "Relu"
-  input: "ConvLayer5/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer5/output_layer_weight"
+  name: "ConvLayer4/output_layer_weight"
   op: "Variable"
   attr {
     key: "container"
@@ -3204,13 +2766,13 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/shape"
+  name: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/shape"
   op: "Const"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -3236,13 +2798,13 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/mean"
+  name: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/mean"
   op: "Const"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -3265,13 +2827,13 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/stddev"
+  name: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/stddev"
   op: "Const"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -3294,9 +2856,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/TruncatedNormal"
+  name: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/TruncatedNormal"
   op: "TruncatedNormal"
-  input: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/shape"
+  input: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/shape"
   attr {
     key: "T"
     value {
@@ -3307,7 +2869,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -3331,10 +2893,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/mul"
+  name: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/mul"
   op: "Mul"
-  input: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/TruncatedNormal"
-  input: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/stddev"
+  input: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/TruncatedNormal"
+  input: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/stddev"
   attr {
     key: "T"
     value {
@@ -3345,16 +2907,16 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
 }
 node {
-  name: "ConvLayer5/output_layer_weight/Initializer/truncated_normal"
+  name: "ConvLayer4/output_layer_weight/Initializer/truncated_normal"
   op: "Add"
-  input: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/mul"
-  input: "ConvLayer5/output_layer_weight/Initializer/truncated_normal/mean"
+  input: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/mul"
+  input: "ConvLayer4/output_layer_weight/Initializer/truncated_normal/mean"
   attr {
     key: "T"
     value {
@@ -3365,16 +2927,16 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
 }
 node {
-  name: "ConvLayer5/output_layer_weight/Assign"
+  name: "ConvLayer4/output_layer_weight/Assign"
   op: "Assign"
-  input: "ConvLayer5/output_layer_weight"
-  input: "ConvLayer5/output_layer_weight/Initializer/truncated_normal"
+  input: "ConvLayer4/output_layer_weight"
+  input: "ConvLayer4/output_layer_weight/Initializer/truncated_normal"
   attr {
     key: "T"
     value {
@@ -3385,7 +2947,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -3403,9 +2965,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/output_layer_weight/read"
+  name: "ConvLayer4/output_layer_weight/read"
   op: "Identity"
-  input: "ConvLayer5/output_layer_weight"
+  input: "ConvLayer4/output_layer_weight"
   attr {
     key: "T"
     value {
@@ -3416,13 +2978,13 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
 }
 node {
-  name: "ConvLayer5/position_bias"
+  name: "ConvLayer4/position_bias"
   op: "Variable"
   attr {
     key: "container"
@@ -3454,13 +3016,13 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/position_bias/Initializer/Const"
+  name: "ConvLayer4/position_bias/Initializer/Const"
   op: "Const"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/position_bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -3486,10 +3048,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/position_bias/Assign"
+  name: "ConvLayer4/position_bias/Assign"
   op: "Assign"
-  input: "ConvLayer5/position_bias"
-  input: "ConvLayer5/position_bias/Initializer/Const"
+  input: "ConvLayer4/position_bias"
+  input: "ConvLayer4/position_bias/Initializer/Const"
   attr {
     key: "T"
     value {
@@ -3500,7 +3062,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/position_bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -3518,9 +3080,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/position_bias/read"
+  name: "ConvLayer4/position_bias/read"
   op: "Identity"
-  input: "ConvLayer5/position_bias"
+  input: "ConvLayer4/position_bias"
   attr {
     key: "T"
     value {
@@ -3531,16 +3093,16 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/position_bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
 }
 node {
-  name: "ConvLayer5_1/Conv2D"
+  name: "ConvLayer4_1/Conv2D"
   op: "Conv2D"
-  input: "ConvLayer5/Relu"
-  input: "ConvLayer5/output_layer_weight/read"
+  input: "ConvLayer4/Relu"
+  input: "ConvLayer4/output_layer_weight/read"
   attr {
     key: "T"
     value {
@@ -3578,7 +3140,7 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_1/Reshape/shape"
+  name: "ConvLayer4_1/Reshape/shape"
   op: "Const"
   attr {
     key: "dtype"
@@ -3602,10 +3164,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_1/Reshape"
+  name: "ConvLayer4_1/Reshape"
   op: "Reshape"
-  input: "ConvLayer5_1/Conv2D"
-  input: "ConvLayer5_1/Reshape/shape"
+  input: "ConvLayer4_1/Conv2D"
+  input: "ConvLayer4_1/Reshape/shape"
   attr {
     key: "T"
     value {
@@ -3620,10 +3182,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_1/output_node"
+  name: "ConvLayer4_1/output_node"
   op: "Add"
-  input: "ConvLayer5_1/Reshape"
-  input: "ConvLayer5/position_bias/read"
+  input: "ConvLayer4_1/Reshape"
+  input: "ConvLayer4/position_bias/read"
   attr {
     key: "T"
     value {
@@ -3658,7 +3220,7 @@ node {
 node {
   name: "SparseSoftmaxCrossEntropyWithLogits/SparseSoftmaxCrossEntropyWithLogits"
   op: "SparseSoftmaxCrossEntropyWithLogits"
-  input: "ConvLayer5_1/output_node"
+  input: "ConvLayer4_1/output_node"
   input: "BatchTrainLabelNode"
   attr {
     key: "T"
@@ -4139,7 +3701,7 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/Shape"
+  name: "gradients/ConvLayer4_1/output_node_grad/Shape"
   op: "Const"
   attr {
     key: "dtype"
@@ -4163,7 +3725,7 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/Shape_1"
+  name: "gradients/ConvLayer4_1/output_node_grad/Shape_1"
   op: "Const"
   attr {
     key: "dtype"
@@ -4187,10 +3749,10 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/BroadcastGradientArgs"
+  name: "gradients/ConvLayer4_1/output_node_grad/BroadcastGradientArgs"
   op: "BroadcastGradientArgs"
-  input: "gradients/ConvLayer5_1/output_node_grad/Shape"
-  input: "gradients/ConvLayer5_1/output_node_grad/Shape_1"
+  input: "gradients/ConvLayer4_1/output_node_grad/Shape"
+  input: "gradients/ConvLayer4_1/output_node_grad/Shape_1"
   attr {
     key: "T"
     value {
@@ -4199,10 +3761,10 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/Sum"
+  name: "gradients/ConvLayer4_1/output_node_grad/Sum"
   op: "Sum"
   input: "gradients/SparseSoftmaxCrossEntropyWithLogits/SparseSoftmaxCrossEntropyWithLogits_grad/mul"
-  input: "gradients/ConvLayer5_1/output_node_grad/BroadcastGradientArgs"
+  input: "gradients/ConvLayer4_1/output_node_grad/BroadcastGradientArgs"
   attr {
     key: "T"
     value {
@@ -4223,10 +3785,10 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/Reshape"
+  name: "gradients/ConvLayer4_1/output_node_grad/Reshape"
   op: "Reshape"
-  input: "gradients/ConvLayer5_1/output_node_grad/Sum"
-  input: "gradients/ConvLayer5_1/output_node_grad/Shape"
+  input: "gradients/ConvLayer4_1/output_node_grad/Sum"
+  input: "gradients/ConvLayer4_1/output_node_grad/Shape"
   attr {
     key: "T"
     value {
@@ -4241,10 +3803,10 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/Sum_1"
+  name: "gradients/ConvLayer4_1/output_node_grad/Sum_1"
   op: "Sum"
   input: "gradients/SparseSoftmaxCrossEntropyWithLogits/SparseSoftmaxCrossEntropyWithLogits_grad/mul"
-  input: "gradients/ConvLayer5_1/output_node_grad/BroadcastGradientArgs:1"
+  input: "gradients/ConvLayer4_1/output_node_grad/BroadcastGradientArgs:1"
   attr {
     key: "T"
     value {
@@ -4265,10 +3827,10 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/Reshape_1"
+  name: "gradients/ConvLayer4_1/output_node_grad/Reshape_1"
   op: "Reshape"
-  input: "gradients/ConvLayer5_1/output_node_grad/Sum_1"
-  input: "gradients/ConvLayer5_1/output_node_grad/Shape_1"
+  input: "gradients/ConvLayer4_1/output_node_grad/Sum_1"
+  input: "gradients/ConvLayer4_1/output_node_grad/Shape_1"
   attr {
     key: "T"
     value {
@@ -4283,16 +3845,16 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/tuple/group_deps"
+  name: "gradients/ConvLayer4_1/output_node_grad/tuple/group_deps"
   op: "NoOp"
-  input: "^gradients/ConvLayer5_1/output_node_grad/Reshape"
-  input: "^gradients/ConvLayer5_1/output_node_grad/Reshape_1"
+  input: "^gradients/ConvLayer4_1/output_node_grad/Reshape"
+  input: "^gradients/ConvLayer4_1/output_node_grad/Reshape_1"
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/tuple/control_dependency"
+  name: "gradients/ConvLayer4_1/output_node_grad/tuple/control_dependency"
   op: "Identity"
-  input: "gradients/ConvLayer5_1/output_node_grad/Reshape"
-  input: "^gradients/ConvLayer5_1/output_node_grad/tuple/group_deps"
+  input: "gradients/ConvLayer4_1/output_node_grad/Reshape"
+  input: "^gradients/ConvLayer4_1/output_node_grad/tuple/group_deps"
   attr {
     key: "T"
     value {
@@ -4303,16 +3865,16 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@gradients/ConvLayer5_1/output_node_grad/Reshape"
+        s: "loc:@gradients/ConvLayer4_1/output_node_grad/Reshape"
       }
     }
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/output_node_grad/tuple/control_dependency_1"
+  name: "gradients/ConvLayer4_1/output_node_grad/tuple/control_dependency_1"
   op: "Identity"
-  input: "gradients/ConvLayer5_1/output_node_grad/Reshape_1"
-  input: "^gradients/ConvLayer5_1/output_node_grad/tuple/group_deps"
+  input: "gradients/ConvLayer4_1/output_node_grad/Reshape_1"
+  input: "^gradients/ConvLayer4_1/output_node_grad/tuple/group_deps"
   attr {
     key: "T"
     value {
@@ -4323,13 +3885,13 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@gradients/ConvLayer5_1/output_node_grad/Reshape_1"
+        s: "loc:@gradients/ConvLayer4_1/output_node_grad/Reshape_1"
       }
     }
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/Reshape_grad/Shape"
+  name: "gradients/ConvLayer4_1/Reshape_grad/Shape"
   op: "Const"
   attr {
     key: "dtype"
@@ -4353,10 +3915,10 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/Reshape_grad/Reshape"
+  name: "gradients/ConvLayer4_1/Reshape_grad/Reshape"
   op: "Reshape"
-  input: "gradients/ConvLayer5_1/output_node_grad/tuple/control_dependency"
-  input: "gradients/ConvLayer5_1/Reshape_grad/Shape"
+  input: "gradients/ConvLayer4_1/output_node_grad/tuple/control_dependency"
+  input: "gradients/ConvLayer4_1/Reshape_grad/Shape"
   attr {
     key: "T"
     value {
@@ -4371,7 +3933,7 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/Conv2D_grad/Shape"
+  name: "gradients/ConvLayer4_1/Conv2D_grad/Shape"
   op: "Const"
   attr {
     key: "dtype"
@@ -4395,11 +3957,11 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/Conv2D_grad/Conv2DBackpropInput"
+  name: "gradients/ConvLayer4_1/Conv2D_grad/Conv2DBackpropInput"
   op: "Conv2DBackpropInput"
-  input: "gradients/ConvLayer5_1/Conv2D_grad/Shape"
-  input: "ConvLayer5/output_layer_weight/read"
-  input: "gradients/ConvLayer5_1/Reshape_grad/Reshape"
+  input: "gradients/ConvLayer4_1/Conv2D_grad/Shape"
+  input: "ConvLayer4/output_layer_weight/read"
+  input: "gradients/ConvLayer4_1/Reshape_grad/Reshape"
   attr {
     key: "T"
     value {
@@ -4437,7 +3999,7 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/Conv2D_grad/Shape_1"
+  name: "gradients/ConvLayer4_1/Conv2D_grad/Shape_1"
   op: "Const"
   attr {
     key: "dtype"
@@ -4461,391 +4023,11 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5_1/Conv2D_grad/Conv2DBackpropFilter"
-  op: "Conv2DBackpropFilter"
-  input: "ConvLayer5/Relu"
-  input: "gradients/ConvLayer5_1/Conv2D_grad/Shape_1"
-  input: "gradients/ConvLayer5_1/Reshape_grad/Reshape"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5_1/Conv2D_grad/tuple/group_deps"
-  op: "NoOp"
-  input: "^gradients/ConvLayer5_1/Conv2D_grad/Conv2DBackpropInput"
-  input: "^gradients/ConvLayer5_1/Conv2D_grad/Conv2DBackpropFilter"
-}
-node {
-  name: "gradients/ConvLayer5_1/Conv2D_grad/tuple/control_dependency"
-  op: "Identity"
-  input: "gradients/ConvLayer5_1/Conv2D_grad/Conv2DBackpropInput"
-  input: "^gradients/ConvLayer5_1/Conv2D_grad/tuple/group_deps"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@gradients/ConvLayer5_1/Conv2D_grad/Conv2DBackpropInput"
-      }
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5_1/Conv2D_grad/tuple/control_dependency_1"
-  op: "Identity"
-  input: "gradients/ConvLayer5_1/Conv2D_grad/Conv2DBackpropFilter"
-  input: "^gradients/ConvLayer5_1/Conv2D_grad/tuple/group_deps"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@gradients/ConvLayer5_1/Conv2D_grad/Conv2DBackpropFilter"
-      }
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/Relu_grad/ReluGrad"
-  op: "ReluGrad"
-  input: "gradients/ConvLayer5_1/Conv2D_grad/tuple/control_dependency"
-  input: "ConvLayer5/Relu"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/Shape"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-            size: 4
-          }
-        }
-        tensor_content: "@\000\000\000\010\000\000\000\010\000\000\000@\000\000\000"
-      }
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/Shape_1"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        int_val: 64
-      }
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/BroadcastGradientArgs"
-  op: "BroadcastGradientArgs"
-  input: "gradients/ConvLayer5/add_grad/Shape"
-  input: "gradients/ConvLayer5/add_grad/Shape_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/Sum"
-  op: "Sum"
-  input: "gradients/ConvLayer5/Relu_grad/ReluGrad"
-  input: "gradients/ConvLayer5/add_grad/BroadcastGradientArgs"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tidx"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "keep_dims"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/Reshape"
-  op: "Reshape"
-  input: "gradients/ConvLayer5/add_grad/Sum"
-  input: "gradients/ConvLayer5/add_grad/Shape"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tshape"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/Sum_1"
-  op: "Sum"
-  input: "gradients/ConvLayer5/Relu_grad/ReluGrad"
-  input: "gradients/ConvLayer5/add_grad/BroadcastGradientArgs:1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tidx"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "keep_dims"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/Reshape_1"
-  op: "Reshape"
-  input: "gradients/ConvLayer5/add_grad/Sum_1"
-  input: "gradients/ConvLayer5/add_grad/Shape_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tshape"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/tuple/group_deps"
-  op: "NoOp"
-  input: "^gradients/ConvLayer5/add_grad/Reshape"
-  input: "^gradients/ConvLayer5/add_grad/Reshape_1"
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/tuple/control_dependency"
-  op: "Identity"
-  input: "gradients/ConvLayer5/add_grad/Reshape"
-  input: "^gradients/ConvLayer5/add_grad/tuple/group_deps"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@gradients/ConvLayer5/add_grad/Reshape"
-      }
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/add_grad/tuple/control_dependency_1"
-  op: "Identity"
-  input: "gradients/ConvLayer5/add_grad/Reshape_1"
-  input: "^gradients/ConvLayer5/add_grad/tuple/group_deps"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@gradients/ConvLayer5/add_grad/Reshape_1"
-      }
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/Conv2D_grad/Shape"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-            size: 4
-          }
-        }
-        tensor_content: "@\000\000\000\010\000\000\000\010\000\000\000@\000\000\000"
-      }
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/Conv2D_grad/Conv2DBackpropInput"
-  op: "Conv2DBackpropInput"
-  input: "gradients/ConvLayer5/Conv2D_grad/Shape"
-  input: "ConvLayer5/weight/read"
-  input: "gradients/ConvLayer5/add_grad/tuple/control_dependency"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/Conv2D_grad/Shape_1"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-            size: 4
-          }
-        }
-        tensor_content: "\003\000\000\000\003\000\000\000@\000\000\000@\000\000\000"
-      }
-    }
-  }
-}
-node {
-  name: "gradients/ConvLayer5/Conv2D_grad/Conv2DBackpropFilter"
+  name: "gradients/ConvLayer4_1/Conv2D_grad/Conv2DBackpropFilter"
   op: "Conv2DBackpropFilter"
   input: "ConvLayer4/Relu"
-  input: "gradients/ConvLayer5/Conv2D_grad/Shape_1"
-  input: "gradients/ConvLayer5/add_grad/tuple/control_dependency"
+  input: "gradients/ConvLayer4_1/Conv2D_grad/Shape_1"
+  input: "gradients/ConvLayer4_1/Reshape_grad/Reshape"
   attr {
     key: "T"
     value {
@@ -4883,16 +4065,16 @@ node {
   }
 }
 node {
-  name: "gradients/ConvLayer5/Conv2D_grad/tuple/group_deps"
+  name: "gradients/ConvLayer4_1/Conv2D_grad/tuple/group_deps"
   op: "NoOp"
-  input: "^gradients/ConvLayer5/Conv2D_grad/Conv2DBackpropInput"
-  input: "^gradients/ConvLayer5/Conv2D_grad/Conv2DBackpropFilter"
+  input: "^gradients/ConvLayer4_1/Conv2D_grad/Conv2DBackpropInput"
+  input: "^gradients/ConvLayer4_1/Conv2D_grad/Conv2DBackpropFilter"
 }
 node {
-  name: "gradients/ConvLayer5/Conv2D_grad/tuple/control_dependency"
+  name: "gradients/ConvLayer4_1/Conv2D_grad/tuple/control_dependency"
   op: "Identity"
-  input: "gradients/ConvLayer5/Conv2D_grad/Conv2DBackpropInput"
-  input: "^gradients/ConvLayer5/Conv2D_grad/tuple/group_deps"
+  input: "gradients/ConvLayer4_1/Conv2D_grad/Conv2DBackpropInput"
+  input: "^gradients/ConvLayer4_1/Conv2D_grad/tuple/group_deps"
   attr {
     key: "T"
     value {
@@ -4903,16 +4085,16 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@gradients/ConvLayer5/Conv2D_grad/Conv2DBackpropInput"
+        s: "loc:@gradients/ConvLayer4_1/Conv2D_grad/Conv2DBackpropInput"
       }
     }
   }
 }
 node {
-  name: "gradients/ConvLayer5/Conv2D_grad/tuple/control_dependency_1"
+  name: "gradients/ConvLayer4_1/Conv2D_grad/tuple/control_dependency_1"
   op: "Identity"
-  input: "gradients/ConvLayer5/Conv2D_grad/Conv2DBackpropFilter"
-  input: "^gradients/ConvLayer5/Conv2D_grad/tuple/group_deps"
+  input: "gradients/ConvLayer4_1/Conv2D_grad/Conv2DBackpropFilter"
+  input: "^gradients/ConvLayer4_1/Conv2D_grad/tuple/group_deps"
   attr {
     key: "T"
     value {
@@ -4923,7 +4105,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@gradients/ConvLayer5/Conv2D_grad/Conv2DBackpropFilter"
+        s: "loc:@gradients/ConvLayer4_1/Conv2D_grad/Conv2DBackpropFilter"
       }
     }
   }
@@ -4931,7 +4113,7 @@ node {
 node {
   name: "gradients/ConvLayer4/Relu_grad/ReluGrad"
   op: "ReluGrad"
-  input: "gradients/ConvLayer5/Conv2D_grad/tuple/control_dependency"
+  input: "gradients/ConvLayer4_1/Conv2D_grad/tuple/control_dependency"
   input: "ConvLayer4/Relu"
   attr {
     key: "T"
@@ -10434,16 +9616,16 @@ node {
         dtype: DT_FLOAT
         tensor_shape {
           dim {
-            size: 3
+            size: 1
           }
           dim {
-            size: 3
-          }
-          dim {
-            size: 64
+            size: 1
           }
           dim {
             size: 64
+          }
+          dim {
+            size: 1
           }
         }
         float_val: 0.0
@@ -10452,13 +9634,13 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/weight/Adam"
+  name: "ConvLayer4/output_layer_weight/Adam"
   op: "Variable"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -10479,16 +9661,16 @@ node {
     value {
       shape {
         dim {
-          size: 3
+          size: 1
         }
         dim {
-          size: 3
-        }
-        dim {
-          size: 64
+          size: 1
         }
         dim {
           size: 64
+        }
+        dim {
+          size: 1
         }
       }
     }
@@ -10501,9 +9683,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/weight/Adam/Assign"
+  name: "ConvLayer4/output_layer_weight/Adam/Assign"
   op: "Assign"
-  input: "ConvLayer5/weight/Adam"
+  input: "ConvLayer4/output_layer_weight/Adam"
   input: "zeros_24"
   attr {
     key: "T"
@@ -10515,7 +9697,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -10533,9 +9715,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/weight/Adam/read"
+  name: "ConvLayer4/output_layer_weight/Adam/read"
   op: "Identity"
-  input: "ConvLayer5/weight/Adam"
+  input: "ConvLayer4/output_layer_weight/Adam"
   attr {
     key: "T"
     value {
@@ -10546,7 +9728,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -10567,16 +9749,16 @@ node {
         dtype: DT_FLOAT
         tensor_shape {
           dim {
-            size: 3
+            size: 1
           }
           dim {
-            size: 3
-          }
-          dim {
-            size: 64
+            size: 1
           }
           dim {
             size: 64
+          }
+          dim {
+            size: 1
           }
         }
         float_val: 0.0
@@ -10585,13 +9767,13 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/weight/Adam_1"
+  name: "ConvLayer4/output_layer_weight/Adam_1"
   op: "Variable"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -10612,16 +9794,16 @@ node {
     value {
       shape {
         dim {
-          size: 3
+          size: 1
         }
         dim {
-          size: 3
-        }
-        dim {
-          size: 64
+          size: 1
         }
         dim {
           size: 64
+        }
+        dim {
+          size: 1
         }
       }
     }
@@ -10634,9 +9816,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/weight/Adam_1/Assign"
+  name: "ConvLayer4/output_layer_weight/Adam_1/Assign"
   op: "Assign"
-  input: "ConvLayer5/weight/Adam_1"
+  input: "ConvLayer4/output_layer_weight/Adam_1"
   input: "zeros_25"
   attr {
     key: "T"
@@ -10648,7 +9830,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -10666,9 +9848,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/weight/Adam_1/read"
+  name: "ConvLayer4/output_layer_weight/Adam_1/read"
   op: "Identity"
-  input: "ConvLayer5/weight/Adam_1"
+  input: "ConvLayer4/output_layer_weight/Adam_1"
   attr {
     key: "T"
     value {
@@ -10679,7 +9861,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -10709,13 +9891,13 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/bias/Adam"
+  name: "ConvLayer4/position_bias/Adam"
   op: "Variable"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -10749,9 +9931,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/bias/Adam/Assign"
+  name: "ConvLayer4/position_bias/Adam/Assign"
   op: "Assign"
-  input: "ConvLayer5/bias/Adam"
+  input: "ConvLayer4/position_bias/Adam"
   input: "zeros_26"
   attr {
     key: "T"
@@ -10763,7 +9945,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -10781,9 +9963,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/bias/Adam/read"
+  name: "ConvLayer4/position_bias/Adam/read"
   op: "Identity"
-  input: "ConvLayer5/bias/Adam"
+  input: "ConvLayer4/position_bias/Adam"
   attr {
     key: "T"
     value {
@@ -10794,7 +9976,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -10824,13 +10006,13 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/bias/Adam_1"
+  name: "ConvLayer4/position_bias/Adam_1"
   op: "Variable"
   attr {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -10864,9 +10046,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/bias/Adam_1/Assign"
+  name: "ConvLayer4/position_bias/Adam_1/Assign"
   op: "Assign"
-  input: "ConvLayer5/bias/Adam_1"
+  input: "ConvLayer4/position_bias/Adam_1"
   input: "zeros_27"
   attr {
     key: "T"
@@ -10878,7 +10060,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -10896,9 +10078,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer5/bias/Adam_1/read"
+  name: "ConvLayer4/position_bias/Adam_1/read"
   op: "Identity"
-  input: "ConvLayer5/bias/Adam_1"
+  input: "ConvLayer4/position_bias/Adam_1"
   attr {
     key: "T"
     value {
@@ -10909,503 +10091,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
-      }
-    }
-  }
-}
-node {
-  name: "zeros_28"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_FLOAT
-        tensor_shape {
-          dim {
-            size: 1
-          }
-          dim {
-            size: 1
-          }
-          dim {
-            size: 64
-          }
-          dim {
-            size: 1
-          }
-        }
-        float_val: 0.0
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/output_layer_weight/Adam"
-  op: "Variable"
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/output_layer_weight"
-      }
-    }
-  }
-  attr {
-    key: "container"
-    value {
-      s: ""
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "shape"
-    value {
-      shape {
-        dim {
-          size: 1
-        }
-        dim {
-          size: 1
-        }
-        dim {
-          size: 64
-        }
-        dim {
-          size: 1
-        }
-      }
-    }
-  }
-  attr {
-    key: "shared_name"
-    value {
-      s: ""
-    }
-  }
-}
-node {
-  name: "ConvLayer5/output_layer_weight/Adam/Assign"
-  op: "Assign"
-  input: "ConvLayer5/output_layer_weight/Adam"
-  input: "zeros_28"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/output_layer_weight"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5/output_layer_weight/Adam/read"
-  op: "Identity"
-  input: "ConvLayer5/output_layer_weight/Adam"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/output_layer_weight"
-      }
-    }
-  }
-}
-node {
-  name: "zeros_29"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_FLOAT
-        tensor_shape {
-          dim {
-            size: 1
-          }
-          dim {
-            size: 1
-          }
-          dim {
-            size: 64
-          }
-          dim {
-            size: 1
-          }
-        }
-        float_val: 0.0
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/output_layer_weight/Adam_1"
-  op: "Variable"
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/output_layer_weight"
-      }
-    }
-  }
-  attr {
-    key: "container"
-    value {
-      s: ""
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "shape"
-    value {
-      shape {
-        dim {
-          size: 1
-        }
-        dim {
-          size: 1
-        }
-        dim {
-          size: 64
-        }
-        dim {
-          size: 1
-        }
-      }
-    }
-  }
-  attr {
-    key: "shared_name"
-    value {
-      s: ""
-    }
-  }
-}
-node {
-  name: "ConvLayer5/output_layer_weight/Adam_1/Assign"
-  op: "Assign"
-  input: "ConvLayer5/output_layer_weight/Adam_1"
-  input: "zeros_29"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/output_layer_weight"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5/output_layer_weight/Adam_1/read"
-  op: "Identity"
-  input: "ConvLayer5/output_layer_weight/Adam_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/output_layer_weight"
-      }
-    }
-  }
-}
-node {
-  name: "zeros_30"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_FLOAT
-        tensor_shape {
-          dim {
-            size: 64
-          }
-        }
-        float_val: 0.0
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/position_bias/Adam"
-  op: "Variable"
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/position_bias"
-      }
-    }
-  }
-  attr {
-    key: "container"
-    value {
-      s: ""
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "shape"
-    value {
-      shape {
-        dim {
-          size: 64
-        }
-      }
-    }
-  }
-  attr {
-    key: "shared_name"
-    value {
-      s: ""
-    }
-  }
-}
-node {
-  name: "ConvLayer5/position_bias/Adam/Assign"
-  op: "Assign"
-  input: "ConvLayer5/position_bias/Adam"
-  input: "zeros_30"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/position_bias"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5/position_bias/Adam/read"
-  op: "Identity"
-  input: "ConvLayer5/position_bias/Adam"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/position_bias"
-      }
-    }
-  }
-}
-node {
-  name: "zeros_31"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_FLOAT
-        tensor_shape {
-          dim {
-            size: 64
-          }
-        }
-        float_val: 0.0
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer5/position_bias/Adam_1"
-  op: "Variable"
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/position_bias"
-      }
-    }
-  }
-  attr {
-    key: "container"
-    value {
-      s: ""
-    }
-  }
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "shape"
-    value {
-      shape {
-        dim {
-          size: 64
-        }
-      }
-    }
-  }
-  attr {
-    key: "shared_name"
-    value {
-      s: ""
-    }
-  }
-}
-node {
-  name: "ConvLayer5/position_bias/Adam_1/Assign"
-  op: "Assign"
-  input: "ConvLayer5/position_bias/Adam_1"
-  input: "zeros_31"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/position_bias"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5/position_bias/Adam_1/read"
-  op: "Identity"
-  input: "ConvLayer5/position_bias/Adam_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/position_bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -11903,18 +10589,18 @@ node {
   }
 }
 node {
-  name: "Adam/update_ConvLayer5/weight/ApplyAdam"
+  name: "Adam/update_ConvLayer4/output_layer_weight/ApplyAdam"
   op: "ApplyAdam"
-  input: "ConvLayer5/weight"
-  input: "ConvLayer5/weight/Adam"
-  input: "ConvLayer5/weight/Adam_1"
+  input: "ConvLayer4/output_layer_weight"
+  input: "ConvLayer4/output_layer_weight/Adam"
+  input: "ConvLayer4/output_layer_weight/Adam_1"
   input: "beta1_power/read"
   input: "beta2_power/read"
   input: "Adam/learning_rate"
   input: "Adam/beta1"
   input: "Adam/beta2"
   input: "Adam/epsilon"
-  input: "gradients/ConvLayer5/Conv2D_grad/tuple/control_dependency_1"
+  input: "gradients/ConvLayer4_1/Conv2D_grad/tuple/control_dependency_1"
   attr {
     key: "T"
     value {
@@ -11925,7 +10611,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -11937,18 +10623,18 @@ node {
   }
 }
 node {
-  name: "Adam/update_ConvLayer5/bias/ApplyAdam"
+  name: "Adam/update_ConvLayer4/position_bias/ApplyAdam"
   op: "ApplyAdam"
-  input: "ConvLayer5/bias"
-  input: "ConvLayer5/bias/Adam"
-  input: "ConvLayer5/bias/Adam_1"
+  input: "ConvLayer4/position_bias"
+  input: "ConvLayer4/position_bias/Adam"
+  input: "ConvLayer4/position_bias/Adam_1"
   input: "beta1_power/read"
   input: "beta2_power/read"
   input: "Adam/learning_rate"
   input: "Adam/beta1"
   input: "Adam/beta2"
   input: "Adam/epsilon"
-  input: "gradients/ConvLayer5/add_grad/tuple/control_dependency_1"
+  input: "gradients/ConvLayer4_1/output_node_grad/tuple/control_dependency_1"
   attr {
     key: "T"
     value {
@@ -11959,75 +10645,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "Adam/update_ConvLayer5/output_layer_weight/ApplyAdam"
-  op: "ApplyAdam"
-  input: "ConvLayer5/output_layer_weight"
-  input: "ConvLayer5/output_layer_weight/Adam"
-  input: "ConvLayer5/output_layer_weight/Adam_1"
-  input: "beta1_power/read"
-  input: "beta2_power/read"
-  input: "Adam/learning_rate"
-  input: "Adam/beta1"
-  input: "Adam/beta2"
-  input: "Adam/epsilon"
-  input: "gradients/ConvLayer5_1/Conv2D_grad/tuple/control_dependency_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/output_layer_weight"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: false
-    }
-  }
-}
-node {
-  name: "Adam/update_ConvLayer5/position_bias/ApplyAdam"
-  op: "ApplyAdam"
-  input: "ConvLayer5/position_bias"
-  input: "ConvLayer5/position_bias/Adam"
-  input: "ConvLayer5/position_bias/Adam_1"
-  input: "beta1_power/read"
-  input: "beta2_power/read"
-  input: "Adam/learning_rate"
-  input: "Adam/beta1"
-  input: "Adam/beta2"
-  input: "Adam/epsilon"
-  input: "gradients/ConvLayer5_1/output_node_grad/tuple/control_dependency_1"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@ConvLayer5/position_bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -12055,10 +10673,8 @@ node {
   input: "^Adam/update_ConvLayer3/bias/ApplyAdam"
   input: "^Adam/update_ConvLayer4/weight/ApplyAdam"
   input: "^Adam/update_ConvLayer4/bias/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/weight/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/bias/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/output_layer_weight/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/position_bias/ApplyAdam"
+  input: "^Adam/update_ConvLayer4/output_layer_weight/ApplyAdam"
+  input: "^Adam/update_ConvLayer4/position_bias/ApplyAdam"
   attr {
     key: "T"
     value {
@@ -12123,10 +10739,8 @@ node {
   input: "^Adam/update_ConvLayer3/bias/ApplyAdam"
   input: "^Adam/update_ConvLayer4/weight/ApplyAdam"
   input: "^Adam/update_ConvLayer4/bias/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/weight/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/bias/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/output_layer_weight/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/position_bias/ApplyAdam"
+  input: "^Adam/update_ConvLayer4/output_layer_weight/ApplyAdam"
+  input: "^Adam/update_ConvLayer4/position_bias/ApplyAdam"
   attr {
     key: "T"
     value {
@@ -12189,17 +10803,15 @@ node {
   input: "^Adam/update_ConvLayer3/bias/ApplyAdam"
   input: "^Adam/update_ConvLayer4/weight/ApplyAdam"
   input: "^Adam/update_ConvLayer4/bias/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/weight/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/bias/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/output_layer_weight/ApplyAdam"
-  input: "^Adam/update_ConvLayer5/position_bias/ApplyAdam"
+  input: "^Adam/update_ConvLayer4/output_layer_weight/ApplyAdam"
+  input: "^Adam/update_ConvLayer4/position_bias/ApplyAdam"
   input: "^Adam/Assign"
   input: "^Adam/Assign_1"
 }
 node {
   name: "Softmax"
   op: "Softmax"
-  input: "ConvLayer5_1/output_node"
+  input: "ConvLayer4_1/output_node"
   attr {
     key: "T"
     value {
@@ -12528,7 +11140,7 @@ node {
   }
 }
 node {
-  name: "ConvLayer4_1/Conv2D"
+  name: "ConvLayer4_2/Conv2D"
   op: "Conv2D"
   input: "ConvLayer3_1/Relu"
   input: "ConvLayer4/weight/read"
@@ -12569,9 +11181,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer4_1/add"
+  name: "ConvLayer4_2/add"
   op: "Add"
-  input: "ConvLayer4_1/Conv2D"
+  input: "ConvLayer4_2/Conv2D"
   input: "ConvLayer4/bias/read"
   attr {
     key: "T"
@@ -12581,9 +11193,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer4_1/Relu"
+  name: "ConvLayer4_2/Relu"
   op: "Relu"
-  input: "ConvLayer4_1/add"
+  input: "ConvLayer4_2/add"
   attr {
     key: "T"
     value {
@@ -12592,10 +11204,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_2/Conv2D"
+  name: "ConvLayer4_3/Conv2D"
   op: "Conv2D"
-  input: "ConvLayer4_1/Relu"
-  input: "ConvLayer5/weight/read"
+  input: "ConvLayer4_2/Relu"
+  input: "ConvLayer4/output_layer_weight/read"
   attr {
     key: "T"
     value {
@@ -12633,71 +11245,7 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_2/add"
-  op: "Add"
-  input: "ConvLayer5_2/Conv2D"
-  input: "ConvLayer5/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer5_2/Relu"
-  op: "Relu"
-  input: "ConvLayer5_2/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer5_3/Conv2D"
-  op: "Conv2D"
-  input: "ConvLayer5_2/Relu"
-  input: "ConvLayer5/output_layer_weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5_3/Reshape/shape"
+  name: "ConvLayer4_3/Reshape/shape"
   op: "Const"
   attr {
     key: "dtype"
@@ -12721,10 +11269,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_3/Reshape"
+  name: "ConvLayer4_3/Reshape"
   op: "Reshape"
-  input: "ConvLayer5_3/Conv2D"
-  input: "ConvLayer5_3/Reshape/shape"
+  input: "ConvLayer4_3/Conv2D"
+  input: "ConvLayer4_3/Reshape/shape"
   attr {
     key: "T"
     value {
@@ -12739,10 +11287,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_3/output_node"
+  name: "ConvLayer4_3/output_node"
   op: "Add"
-  input: "ConvLayer5_3/Reshape"
-  input: "ConvLayer5/position_bias/read"
+  input: "ConvLayer4_3/Reshape"
+  input: "ConvLayer4/position_bias/read"
   attr {
     key: "T"
     value {
@@ -12753,7 +11301,7 @@ node {
 node {
   name: "Softmax_1"
   op: "Softmax"
-  input: "ConvLayer5_3/output_node"
+  input: "ConvLayer4_3/output_node"
   attr {
     key: "T"
     value {
@@ -12762,7 +11310,7 @@ node {
   }
 }
 node {
-  name: "XInputNode"
+  name: "x_input_node"
   op: "Placeholder"
   attr {
     key: "dtype"
@@ -12793,7 +11341,7 @@ node {
 node {
   name: "InputLayer_2/Conv2D"
   op: "Conv2D"
-  input: "XInputNode"
+  input: "x_input_node"
   input: "InputLayer/weight/read"
   attr {
     key: "T"
@@ -13111,7 +11659,7 @@ node {
   }
 }
 node {
-  name: "ConvLayer4_2/Conv2D"
+  name: "ConvLayer4_4/Conv2D"
   op: "Conv2D"
   input: "ConvLayer3_2/Relu"
   input: "ConvLayer4/weight/read"
@@ -13152,9 +11700,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer4_2/add"
+  name: "ConvLayer4_4/add"
   op: "Add"
-  input: "ConvLayer4_2/Conv2D"
+  input: "ConvLayer4_4/Conv2D"
   input: "ConvLayer4/bias/read"
   attr {
     key: "T"
@@ -13164,9 +11712,9 @@ node {
   }
 }
 node {
-  name: "ConvLayer4_2/Relu"
+  name: "ConvLayer4_4/Relu"
   op: "Relu"
-  input: "ConvLayer4_2/add"
+  input: "ConvLayer4_4/add"
   attr {
     key: "T"
     value {
@@ -13175,10 +11723,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_4/Conv2D"
+  name: "ConvLayer4_5/Conv2D"
   op: "Conv2D"
-  input: "ConvLayer4_2/Relu"
-  input: "ConvLayer5/weight/read"
+  input: "ConvLayer4_4/Relu"
+  input: "ConvLayer4/output_layer_weight/read"
   attr {
     key: "T"
     value {
@@ -13216,71 +11764,7 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_4/add"
-  op: "Add"
-  input: "ConvLayer5_4/Conv2D"
-  input: "ConvLayer5/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer5_4/Relu"
-  op: "Relu"
-  input: "ConvLayer5_4/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer5_5/Conv2D"
-  op: "Conv2D"
-  input: "ConvLayer5_4/Relu"
-  input: "ConvLayer5/output_layer_weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer5_5/Reshape/shape"
+  name: "ConvLayer4_5/Reshape/shape"
   op: "Const"
   attr {
     key: "dtype"
@@ -13304,10 +11788,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_5/Reshape"
+  name: "ConvLayer4_5/Reshape"
   op: "Reshape"
-  input: "ConvLayer5_5/Conv2D"
-  input: "ConvLayer5_5/Reshape/shape"
+  input: "ConvLayer4_5/Conv2D"
+  input: "ConvLayer4_5/Reshape/shape"
   attr {
     key: "T"
     value {
@@ -13322,10 +11806,10 @@ node {
   }
 }
 node {
-  name: "ConvLayer5_5/output_node"
+  name: "ConvLayer4_5/output_node"
   op: "Add"
-  input: "ConvLayer5_5/Reshape"
-  input: "ConvLayer5/position_bias/read"
+  input: "ConvLayer4_5/Reshape"
+  input: "ConvLayer4/position_bias/read"
   attr {
     key: "T"
     value {
@@ -13453,7 +11937,7 @@ node {
         dtype: DT_STRING
         tensor_shape {
           dim {
-            size: 50
+            size: 44
           }
         }
         string_val: "ConvLayer0/bias"
@@ -13483,21 +11967,15 @@ node {
         string_val: "ConvLayer4/bias"
         string_val: "ConvLayer4/bias/Adam"
         string_val: "ConvLayer4/bias/Adam_1"
+        string_val: "ConvLayer4/output_layer_weight"
+        string_val: "ConvLayer4/output_layer_weight/Adam"
+        string_val: "ConvLayer4/output_layer_weight/Adam_1"
+        string_val: "ConvLayer4/position_bias"
+        string_val: "ConvLayer4/position_bias/Adam"
+        string_val: "ConvLayer4/position_bias/Adam_1"
         string_val: "ConvLayer4/weight"
         string_val: "ConvLayer4/weight/Adam"
         string_val: "ConvLayer4/weight/Adam_1"
-        string_val: "ConvLayer5/bias"
-        string_val: "ConvLayer5/bias/Adam"
-        string_val: "ConvLayer5/bias/Adam_1"
-        string_val: "ConvLayer5/output_layer_weight"
-        string_val: "ConvLayer5/output_layer_weight/Adam"
-        string_val: "ConvLayer5/output_layer_weight/Adam_1"
-        string_val: "ConvLayer5/position_bias"
-        string_val: "ConvLayer5/position_bias/Adam"
-        string_val: "ConvLayer5/position_bias/Adam_1"
-        string_val: "ConvLayer5/weight"
-        string_val: "ConvLayer5/weight/Adam"
-        string_val: "ConvLayer5/weight/Adam_1"
         string_val: "InputLayer/bias"
         string_val: "InputLayer/bias/Adam"
         string_val: "InputLayer/bias/Adam_1"
@@ -13526,15 +12004,9 @@ node {
         dtype: DT_STRING
         tensor_shape {
           dim {
-            size: 50
+            size: 44
           }
         }
-        string_val: ""
-        string_val: ""
-        string_val: ""
-        string_val: ""
-        string_val: ""
-        string_val: ""
         string_val: ""
         string_val: ""
         string_val: ""
@@ -13616,21 +12088,15 @@ node {
   input: "ConvLayer4/bias"
   input: "ConvLayer4/bias/Adam"
   input: "ConvLayer4/bias/Adam_1"
+  input: "ConvLayer4/output_layer_weight"
+  input: "ConvLayer4/output_layer_weight/Adam"
+  input: "ConvLayer4/output_layer_weight/Adam_1"
+  input: "ConvLayer4/position_bias"
+  input: "ConvLayer4/position_bias/Adam"
+  input: "ConvLayer4/position_bias/Adam_1"
   input: "ConvLayer4/weight"
   input: "ConvLayer4/weight/Adam"
   input: "ConvLayer4/weight/Adam_1"
-  input: "ConvLayer5/bias"
-  input: "ConvLayer5/bias/Adam"
-  input: "ConvLayer5/bias/Adam_1"
-  input: "ConvLayer5/output_layer_weight"
-  input: "ConvLayer5/output_layer_weight/Adam"
-  input: "ConvLayer5/output_layer_weight/Adam_1"
-  input: "ConvLayer5/position_bias"
-  input: "ConvLayer5/position_bias/Adam"
-  input: "ConvLayer5/position_bias/Adam_1"
-  input: "ConvLayer5/weight"
-  input: "ConvLayer5/weight/Adam"
-  input: "ConvLayer5/weight/Adam_1"
   input: "InputLayer/bias"
   input: "InputLayer/bias/Adam"
   input: "InputLayer/bias/Adam_1"
@@ -13643,12 +12109,6 @@ node {
     key: "dtypes"
     value {
       list {
-        type: DT_FLOAT
-        type: DT_FLOAT
-        type: DT_FLOAT
-        type: DT_FLOAT
-        type: DT_FLOAT
-        type: DT_FLOAT
         type: DT_FLOAT
         type: DT_FLOAT
         type: DT_FLOAT
@@ -16301,7 +14761,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer4/weight"
+        string_val: "ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -16348,7 +14808,7 @@ node {
 node {
   name: "save/Assign_27"
   op: "Assign"
-  input: "ConvLayer4/weight"
+  input: "ConvLayer4/output_layer_weight"
   input: "save/RestoreV2_27"
   attr {
     key: "T"
@@ -16360,7 +14820,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer4/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -16396,7 +14856,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer4/weight/Adam"
+        string_val: "ConvLayer4/output_layer_weight/Adam"
       }
     }
   }
@@ -16443,7 +14903,7 @@ node {
 node {
   name: "save/Assign_28"
   op: "Assign"
-  input: "ConvLayer4/weight/Adam"
+  input: "ConvLayer4/output_layer_weight/Adam"
   input: "save/RestoreV2_28"
   attr {
     key: "T"
@@ -16455,7 +14915,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer4/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -16491,7 +14951,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer4/weight/Adam_1"
+        string_val: "ConvLayer4/output_layer_weight/Adam_1"
       }
     }
   }
@@ -16538,7 +14998,7 @@ node {
 node {
   name: "save/Assign_29"
   op: "Assign"
-  input: "ConvLayer4/weight/Adam_1"
+  input: "ConvLayer4/output_layer_weight/Adam_1"
   input: "save/RestoreV2_29"
   attr {
     key: "T"
@@ -16550,7 +15010,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer4/weight"
+        s: "loc:@ConvLayer4/output_layer_weight"
       }
     }
   }
@@ -16586,7 +15046,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/bias"
+        string_val: "ConvLayer4/position_bias"
       }
     }
   }
@@ -16633,7 +15093,7 @@ node {
 node {
   name: "save/Assign_30"
   op: "Assign"
-  input: "ConvLayer5/bias"
+  input: "ConvLayer4/position_bias"
   input: "save/RestoreV2_30"
   attr {
     key: "T"
@@ -16645,7 +15105,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -16681,7 +15141,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/bias/Adam"
+        string_val: "ConvLayer4/position_bias/Adam"
       }
     }
   }
@@ -16728,7 +15188,7 @@ node {
 node {
   name: "save/Assign_31"
   op: "Assign"
-  input: "ConvLayer5/bias/Adam"
+  input: "ConvLayer4/position_bias/Adam"
   input: "save/RestoreV2_31"
   attr {
     key: "T"
@@ -16740,7 +15200,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -16776,7 +15236,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/bias/Adam_1"
+        string_val: "ConvLayer4/position_bias/Adam_1"
       }
     }
   }
@@ -16823,7 +15283,7 @@ node {
 node {
   name: "save/Assign_32"
   op: "Assign"
-  input: "ConvLayer5/bias/Adam_1"
+  input: "ConvLayer4/position_bias/Adam_1"
   input: "save/RestoreV2_32"
   attr {
     key: "T"
@@ -16835,7 +15295,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/bias"
+        s: "loc:@ConvLayer4/position_bias"
       }
     }
   }
@@ -16871,7 +15331,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/output_layer_weight"
+        string_val: "ConvLayer4/weight"
       }
     }
   }
@@ -16918,7 +15378,7 @@ node {
 node {
   name: "save/Assign_33"
   op: "Assign"
-  input: "ConvLayer5/output_layer_weight"
+  input: "ConvLayer4/weight"
   input: "save/RestoreV2_33"
   attr {
     key: "T"
@@ -16930,7 +15390,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/weight"
       }
     }
   }
@@ -16966,7 +15426,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/output_layer_weight/Adam"
+        string_val: "ConvLayer4/weight/Adam"
       }
     }
   }
@@ -17013,7 +15473,7 @@ node {
 node {
   name: "save/Assign_34"
   op: "Assign"
-  input: "ConvLayer5/output_layer_weight/Adam"
+  input: "ConvLayer4/weight/Adam"
   input: "save/RestoreV2_34"
   attr {
     key: "T"
@@ -17025,7 +15485,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/weight"
       }
     }
   }
@@ -17061,7 +15521,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/output_layer_weight/Adam_1"
+        string_val: "ConvLayer4/weight/Adam_1"
       }
     }
   }
@@ -17108,7 +15568,7 @@ node {
 node {
   name: "save/Assign_35"
   op: "Assign"
-  input: "ConvLayer5/output_layer_weight/Adam_1"
+  input: "ConvLayer4/weight/Adam_1"
   input: "save/RestoreV2_35"
   attr {
     key: "T"
@@ -17120,7 +15580,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/output_layer_weight"
+        s: "loc:@ConvLayer4/weight"
       }
     }
   }
@@ -17156,7 +15616,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/position_bias"
+        string_val: "InputLayer/bias"
       }
     }
   }
@@ -17203,7 +15663,7 @@ node {
 node {
   name: "save/Assign_36"
   op: "Assign"
-  input: "ConvLayer5/position_bias"
+  input: "InputLayer/bias"
   input: "save/RestoreV2_36"
   attr {
     key: "T"
@@ -17215,7 +15675,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/position_bias"
+        s: "loc:@InputLayer/bias"
       }
     }
   }
@@ -17251,7 +15711,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/position_bias/Adam"
+        string_val: "InputLayer/bias/Adam"
       }
     }
   }
@@ -17298,7 +15758,7 @@ node {
 node {
   name: "save/Assign_37"
   op: "Assign"
-  input: "ConvLayer5/position_bias/Adam"
+  input: "InputLayer/bias/Adam"
   input: "save/RestoreV2_37"
   attr {
     key: "T"
@@ -17310,7 +15770,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/position_bias"
+        s: "loc:@InputLayer/bias"
       }
     }
   }
@@ -17346,7 +15806,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/position_bias/Adam_1"
+        string_val: "InputLayer/bias/Adam_1"
       }
     }
   }
@@ -17393,7 +15853,7 @@ node {
 node {
   name: "save/Assign_38"
   op: "Assign"
-  input: "ConvLayer5/position_bias/Adam_1"
+  input: "InputLayer/bias/Adam_1"
   input: "save/RestoreV2_38"
   attr {
     key: "T"
@@ -17405,7 +15865,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/position_bias"
+        s: "loc:@InputLayer/bias"
       }
     }
   }
@@ -17441,7 +15901,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/weight"
+        string_val: "InputLayer/weight"
       }
     }
   }
@@ -17488,7 +15948,7 @@ node {
 node {
   name: "save/Assign_39"
   op: "Assign"
-  input: "ConvLayer5/weight"
+  input: "InputLayer/weight"
   input: "save/RestoreV2_39"
   attr {
     key: "T"
@@ -17500,7 +15960,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@InputLayer/weight"
       }
     }
   }
@@ -17536,7 +15996,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/weight/Adam"
+        string_val: "InputLayer/weight/Adam"
       }
     }
   }
@@ -17583,7 +16043,7 @@ node {
 node {
   name: "save/Assign_40"
   op: "Assign"
-  input: "ConvLayer5/weight/Adam"
+  input: "InputLayer/weight/Adam"
   input: "save/RestoreV2_40"
   attr {
     key: "T"
@@ -17595,7 +16055,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@InputLayer/weight"
       }
     }
   }
@@ -17631,7 +16091,7 @@ node {
             size: 1
           }
         }
-        string_val: "ConvLayer5/weight/Adam_1"
+        string_val: "InputLayer/weight/Adam_1"
       }
     }
   }
@@ -17678,7 +16138,7 @@ node {
 node {
   name: "save/Assign_41"
   op: "Assign"
-  input: "ConvLayer5/weight/Adam_1"
+  input: "InputLayer/weight/Adam_1"
   input: "save/RestoreV2_41"
   attr {
     key: "T"
@@ -17690,7 +16150,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@ConvLayer5/weight"
+        s: "loc:@InputLayer/weight"
       }
     }
   }
@@ -17726,7 +16186,7 @@ node {
             size: 1
           }
         }
-        string_val: "InputLayer/bias"
+        string_val: "beta1_power"
       }
     }
   }
@@ -17773,7 +16233,7 @@ node {
 node {
   name: "save/Assign_42"
   op: "Assign"
-  input: "InputLayer/bias"
+  input: "beta1_power"
   input: "save/RestoreV2_42"
   attr {
     key: "T"
@@ -17785,7 +16245,7 @@ node {
     key: "_class"
     value {
       list {
-        s: "loc:@InputLayer/bias"
+        s: "loc:@InputLayer/weight"
       }
     }
   }
@@ -17821,7 +16281,7 @@ node {
             size: 1
           }
         }
-        string_val: "InputLayer/bias/Adam"
+        string_val: "beta2_power"
       }
     }
   }
@@ -17868,578 +16328,8 @@ node {
 node {
   name: "save/Assign_43"
   op: "Assign"
-  input: "InputLayer/bias/Adam"
-  input: "save/RestoreV2_43"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@InputLayer/bias"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_44/tensor_names"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: "InputLayer/bias/Adam_1"
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_44/shape_and_slices"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: ""
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_44"
-  op: "RestoreV2"
-  input: "save/Const"
-  input: "save/RestoreV2_44/tensor_names"
-  input: "save/RestoreV2_44/shape_and_slices"
-  attr {
-    key: "dtypes"
-    value {
-      list {
-        type: DT_FLOAT
-      }
-    }
-  }
-}
-node {
-  name: "save/Assign_44"
-  op: "Assign"
-  input: "InputLayer/bias/Adam_1"
-  input: "save/RestoreV2_44"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@InputLayer/bias"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_45/tensor_names"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: "InputLayer/weight"
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_45/shape_and_slices"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: ""
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_45"
-  op: "RestoreV2"
-  input: "save/Const"
-  input: "save/RestoreV2_45/tensor_names"
-  input: "save/RestoreV2_45/shape_and_slices"
-  attr {
-    key: "dtypes"
-    value {
-      list {
-        type: DT_FLOAT
-      }
-    }
-  }
-}
-node {
-  name: "save/Assign_45"
-  op: "Assign"
-  input: "InputLayer/weight"
-  input: "save/RestoreV2_45"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@InputLayer/weight"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_46/tensor_names"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: "InputLayer/weight/Adam"
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_46/shape_and_slices"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: ""
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_46"
-  op: "RestoreV2"
-  input: "save/Const"
-  input: "save/RestoreV2_46/tensor_names"
-  input: "save/RestoreV2_46/shape_and_slices"
-  attr {
-    key: "dtypes"
-    value {
-      list {
-        type: DT_FLOAT
-      }
-    }
-  }
-}
-node {
-  name: "save/Assign_46"
-  op: "Assign"
-  input: "InputLayer/weight/Adam"
-  input: "save/RestoreV2_46"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@InputLayer/weight"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_47/tensor_names"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: "InputLayer/weight/Adam_1"
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_47/shape_and_slices"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: ""
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_47"
-  op: "RestoreV2"
-  input: "save/Const"
-  input: "save/RestoreV2_47/tensor_names"
-  input: "save/RestoreV2_47/shape_and_slices"
-  attr {
-    key: "dtypes"
-    value {
-      list {
-        type: DT_FLOAT
-      }
-    }
-  }
-}
-node {
-  name: "save/Assign_47"
-  op: "Assign"
-  input: "InputLayer/weight/Adam_1"
-  input: "save/RestoreV2_47"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@InputLayer/weight"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_48/tensor_names"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: "beta1_power"
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_48/shape_and_slices"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: ""
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_48"
-  op: "RestoreV2"
-  input: "save/Const"
-  input: "save/RestoreV2_48/tensor_names"
-  input: "save/RestoreV2_48/shape_and_slices"
-  attr {
-    key: "dtypes"
-    value {
-      list {
-        type: DT_FLOAT
-      }
-    }
-  }
-}
-node {
-  name: "save/Assign_48"
-  op: "Assign"
-  input: "beta1_power"
-  input: "save/RestoreV2_48"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "_class"
-    value {
-      list {
-        s: "loc:@InputLayer/weight"
-      }
-    }
-  }
-  attr {
-    key: "use_locking"
-    value {
-      b: true
-    }
-  }
-  attr {
-    key: "validate_shape"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_49/tensor_names"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: "beta2_power"
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_49/shape_and_slices"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_STRING
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_STRING
-        tensor_shape {
-          dim {
-            size: 1
-          }
-        }
-        string_val: ""
-      }
-    }
-  }
-}
-node {
-  name: "save/RestoreV2_49"
-  op: "RestoreV2"
-  input: "save/Const"
-  input: "save/RestoreV2_49/tensor_names"
-  input: "save/RestoreV2_49/shape_and_slices"
-  attr {
-    key: "dtypes"
-    value {
-      list {
-        type: DT_FLOAT
-      }
-    }
-  }
-}
-node {
-  name: "save/Assign_49"
-  op: "Assign"
   input: "beta2_power"
-  input: "save/RestoreV2_49"
+  input: "save/RestoreV2_43"
   attr {
     key: "T"
     value {
@@ -18514,12 +16404,6 @@ node {
   input: "^save/Assign_41"
   input: "^save/Assign_42"
   input: "^save/Assign_43"
-  input: "^save/Assign_44"
-  input: "^save/Assign_45"
-  input: "^save/Assign_46"
-  input: "^save/Assign_47"
-  input: "^save/Assign_48"
-  input: "^save/Assign_49"
 }
 node {
   name: "init"
@@ -18536,10 +16420,8 @@ node {
   input: "^ConvLayer3/bias/Assign"
   input: "^ConvLayer4/weight/Assign"
   input: "^ConvLayer4/bias/Assign"
-  input: "^ConvLayer5/weight/Assign"
-  input: "^ConvLayer5/bias/Assign"
-  input: "^ConvLayer5/output_layer_weight/Assign"
-  input: "^ConvLayer5/position_bias/Assign"
+  input: "^ConvLayer4/output_layer_weight/Assign"
+  input: "^ConvLayer4/position_bias/Assign"
   input: "^beta1_power/Assign"
   input: "^beta2_power/Assign"
   input: "^InputLayer/weight/Adam/Assign"
@@ -18566,14 +16448,10 @@ node {
   input: "^ConvLayer4/weight/Adam_1/Assign"
   input: "^ConvLayer4/bias/Adam/Assign"
   input: "^ConvLayer4/bias/Adam_1/Assign"
-  input: "^ConvLayer5/weight/Adam/Assign"
-  input: "^ConvLayer5/weight/Adam_1/Assign"
-  input: "^ConvLayer5/bias/Adam/Assign"
-  input: "^ConvLayer5/bias/Adam_1/Assign"
-  input: "^ConvLayer5/output_layer_weight/Adam/Assign"
-  input: "^ConvLayer5/output_layer_weight/Adam_1/Assign"
-  input: "^ConvLayer5/position_bias/Adam/Assign"
-  input: "^ConvLayer5/position_bias/Adam_1/Assign"
+  input: "^ConvLayer4/output_layer_weight/Adam/Assign"
+  input: "^ConvLayer4/output_layer_weight/Adam_1/Assign"
+  input: "^ConvLayer4/position_bias/Adam/Assign"
+  input: "^ConvLayer4/position_bias/Adam_1/Assign"
 }
 versions {
   producer: 17

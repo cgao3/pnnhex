@@ -260,7 +260,7 @@ def main(argv=None):
    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train.txt",
                        srcTestDataPath="storage/position-action/8x8/validate.txt",
                        srcTestPathFinal="storage/position-action/8x8/test.txt")
-   slnet.train(12000)
+   slnet.train(15000)
 
 if __name__ == "__main__":
     tf.app.run()

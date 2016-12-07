@@ -31,7 +31,7 @@ class SupervisedNet(object):
         self.inputLayer=Layer("InputLayer", paddingMethod="VALID")
         self.convLayers=[Layer("ConvLayer%d"%i) for i in xrange(nLayers)]
 
-    def model(self, dataNode, kernalSize=(3,3), kernalDepth=80):
+    def model(self, dataNode, kernalSize=(3,3), kernalDepth=64):
         weightShape=kernalSize+(INPUT_DEPTH, kernalDepth)
         output=self.inputLayer.convolve(dataNode, weight_shape=weightShape, bias_shape=(kernalDepth,))
 
@@ -48,7 +48,7 @@ class SupervisedNet(object):
         self.testInputNode = tf.placeholder(dtype=tf.float32, shape=(EVAL_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="BatchTestInputNode")
         self.testLabelNode = tf.placeholder(dtype=tf.int32, shape=(EVAL_BATCH_SIZE,), name="BatchTestLabelNode")
 
-        self._setup_architecture(nLayers=6)
+        self._setup_architecture(nLayers=5)
         logits=self.model(self.trainInputNode)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, self.trainLabelNode))
         opt=tf.train.AdamOptimizer().minimize(loss)
@@ -59,7 +59,7 @@ class SupervisedNet(object):
         trainDataUtil = PositionUtil(positiondata_filename=self.srcTrainPath, batch_size=BATCH_SIZE)
         testDataUtil = PositionUtil(positiondata_filename=self.srcTestPath, batch_size=EVAL_BATCH_SIZE)
 
-        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="XInputNode")
+        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
         self.xLogits=self.model(self.xInputNode)
 
         accuracyPlaceholder = tf.placeholder(tf.float32)

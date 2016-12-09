@@ -48,7 +48,7 @@ node {
   }
 }
 node {
-  name: "BatchTestInputNode"
+  name: "x_input_node"
   op: "Placeholder"
   attr {
     key: "dtype"
@@ -61,7 +61,7 @@ node {
     value {
       shape {
         dim {
-          size: 440
+          size: 1
         }
         dim {
           size: 10
@@ -71,26 +71,6 @@ node {
         }
         dim {
           size: 3
-        }
-      }
-    }
-  }
-}
-node {
-  name: "BatchTestLabelNode"
-  op: "Placeholder"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "shape"
-    value {
-      shape {
-        dim {
-          size: 440
         }
       }
     }
@@ -3186,6 +3166,17 @@ node {
   op: "Add"
   input: "ConvLayer4_1/Reshape"
   input: "ConvLayer4/position_bias/read"
+  attr {
+    key: "T"
+    value {
+      type: DT_FLOAT
+    }
+  }
+}
+node {
+  name: "Softmax"
+  op: "Softmax"
+  input: "ConvLayer4_1/output_node"
   attr {
     key: "T"
     value {
@@ -10809,20 +10800,9 @@ node {
   input: "^Adam/Assign_1"
 }
 node {
-  name: "Softmax"
-  op: "Softmax"
-  input: "ConvLayer4_1/output_node"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
   name: "InputLayer_1/Conv2D"
   op: "Conv2D"
-  input: "BatchTestInputNode"
+  input: "x_input_node"
   input: "InputLayer/weight/read"
   attr {
     key: "T"
@@ -11263,7 +11243,7 @@ node {
             size: 2
           }
         }
-        tensor_content: "\270\001\000\000@\000\000\000"
+        tensor_content: "\001\000\000\000@\000\000\000"
       }
     }
   }
@@ -11290,525 +11270,6 @@ node {
   name: "ConvLayer4_3/output_node"
   op: "Add"
   input: "ConvLayer4_3/Reshape"
-  input: "ConvLayer4/position_bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "Softmax_1"
-  op: "Softmax"
-  input: "ConvLayer4_3/output_node"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "x_input_node"
-  op: "Placeholder"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "shape"
-    value {
-      shape {
-        dim {
-          size: 1
-        }
-        dim {
-          size: 10
-        }
-        dim {
-          size: 10
-        }
-        dim {
-          size: 3
-        }
-      }
-    }
-  }
-}
-node {
-  name: "InputLayer_2/Conv2D"
-  op: "Conv2D"
-  input: "x_input_node"
-  input: "InputLayer/weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "VALID"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "InputLayer_2/add"
-  op: "Add"
-  input: "InputLayer_2/Conv2D"
-  input: "InputLayer/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "InputLayer_2/Relu"
-  op: "Relu"
-  input: "InputLayer_2/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer0_2/Conv2D"
-  op: "Conv2D"
-  input: "InputLayer_2/Relu"
-  input: "ConvLayer0/weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer0_2/add"
-  op: "Add"
-  input: "ConvLayer0_2/Conv2D"
-  input: "ConvLayer0/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer0_2/Relu"
-  op: "Relu"
-  input: "ConvLayer0_2/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer1_2/Conv2D"
-  op: "Conv2D"
-  input: "ConvLayer0_2/Relu"
-  input: "ConvLayer1/weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer1_2/add"
-  op: "Add"
-  input: "ConvLayer1_2/Conv2D"
-  input: "ConvLayer1/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer1_2/Relu"
-  op: "Relu"
-  input: "ConvLayer1_2/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer2_2/Conv2D"
-  op: "Conv2D"
-  input: "ConvLayer1_2/Relu"
-  input: "ConvLayer2/weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer2_2/add"
-  op: "Add"
-  input: "ConvLayer2_2/Conv2D"
-  input: "ConvLayer2/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer2_2/Relu"
-  op: "Relu"
-  input: "ConvLayer2_2/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer3_2/Conv2D"
-  op: "Conv2D"
-  input: "ConvLayer2_2/Relu"
-  input: "ConvLayer3/weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer3_2/add"
-  op: "Add"
-  input: "ConvLayer3_2/Conv2D"
-  input: "ConvLayer3/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer3_2/Relu"
-  op: "Relu"
-  input: "ConvLayer3_2/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer4_4/Conv2D"
-  op: "Conv2D"
-  input: "ConvLayer3_2/Relu"
-  input: "ConvLayer4/weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer4_4/add"
-  op: "Add"
-  input: "ConvLayer4_4/Conv2D"
-  input: "ConvLayer4/bias/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer4_4/Relu"
-  op: "Relu"
-  input: "ConvLayer4_4/add"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-}
-node {
-  name: "ConvLayer4_5/Conv2D"
-  op: "Conv2D"
-  input: "ConvLayer4_4/Relu"
-  input: "ConvLayer4/output_layer_weight/read"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "data_format"
-    value {
-      s: "NHWC"
-    }
-  }
-  attr {
-    key: "padding"
-    value {
-      s: "SAME"
-    }
-  }
-  attr {
-    key: "strides"
-    value {
-      list {
-        i: 1
-        i: 1
-        i: 1
-        i: 1
-      }
-    }
-  }
-  attr {
-    key: "use_cudnn_on_gpu"
-    value {
-      b: true
-    }
-  }
-}
-node {
-  name: "ConvLayer4_5/Reshape/shape"
-  op: "Const"
-  attr {
-    key: "dtype"
-    value {
-      type: DT_INT32
-    }
-  }
-  attr {
-    key: "value"
-    value {
-      tensor {
-        dtype: DT_INT32
-        tensor_shape {
-          dim {
-            size: 2
-          }
-        }
-        tensor_content: "\001\000\000\000@\000\000\000"
-      }
-    }
-  }
-}
-node {
-  name: "ConvLayer4_5/Reshape"
-  op: "Reshape"
-  input: "ConvLayer4_5/Conv2D"
-  input: "ConvLayer4_5/Reshape/shape"
-  attr {
-    key: "T"
-    value {
-      type: DT_FLOAT
-    }
-  }
-  attr {
-    key: "Tshape"
-    value {
-      type: DT_INT32
-    }
-  }
-}
-node {
-  name: "ConvLayer4_5/output_node"
-  op: "Add"
-  input: "ConvLayer4_5/Reshape"
   input: "ConvLayer4/position_bias/read"
   attr {
     key: "T"

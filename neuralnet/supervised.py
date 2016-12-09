@@ -44,24 +44,25 @@ class SupervisedNet(object):
         return logits
 
     def train(self, nSteps):
-        self.trainInputNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),name="BatchTrainInputNode")
-        self.trainLabelNode = tf.placeholder(dtype=tf.int32, shape=(BATCH_SIZE,), name="BatchTrainLabelNode")
-        self.testInputNode = tf.placeholder(dtype=tf.float32, shape=(EVAL_BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="BatchTestInputNode")
-        self.testLabelNode = tf.placeholder(dtype=tf.int32, shape=(EVAL_BATCH_SIZE,), name="BatchTestLabelNode")
-
-        self._setup_architecture(nLayers=5)
-        logits=self.model(self.trainInputNode)
-        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits, self.trainLabelNode))
-        opt=tf.train.AdamOptimizer().minimize(loss)
-        train_prediction=tf.nn.softmax(logits)
-
-        tf.get_variable_scope().reuse_variables()
-        eval_prediction=tf.nn.softmax(self.model(self.testInputNode))
-        trainDataUtil = PositionUtil(positiondata_filename=self.srcTrainPath, batch_size=BATCH_SIZE)
-        testDataUtil = PositionUtil(positiondata_filename=self.srcTestPath, batch_size=EVAL_BATCH_SIZE)
+        self.batchInputNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),name="BatchTrainInputNode")
+        self.batchLabelNode = tf.placeholder(dtype=tf.int32, shape=(BATCH_SIZE,), name="BatchTrainLabelNode")
 
         self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
+        fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        fake_input.fill(0)
+
+        self._setup_architecture(nLayers=5)
+        batchLogits=self.model(self.batchInputNode)
+        batchPrediction=tf.nn.softmax(batchLogits)
+        loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(batchLogits, self.batchLabelNode))
+        opt=tf.train.AdamOptimizer().minimize(loss)
+
+        tf.get_variable_scope().reuse_variables()
+#eval_prediction=tf.nn.softmax(self.model(self.testInputNode))
         self.xLogits=self.model(self.xInputNode)
+        
+        trainDataUtil = PositionUtil(positiondata_filename=self.srcTrainPath, batch_size=BATCH_SIZE)
+        testDataUtil = PositionUtil(positiondata_filename=self.srcTestPath, batch_size=BATCH_SIZE)
 
         accuracyPlaceholder = tf.placeholder(tf.float32)
         accuracyTrainSummary = tf.scalar_summary("Accuracy (Training)", accuracyPlaceholder)
@@ -84,12 +85,13 @@ class SupervisedNet(object):
                 nextEpoch=trainDataUtil.prepare_batch()
                 if nextEpoch: epoch_num += 1
                 inputs=trainDataUtil.batch_positions.astype(np.float32)
-                label=trainDataUtil.batch_labels.astype(np.uint16)
-                feed_dictionary={self.trainInputNode:inputs, self.trainLabelNode:label}
-                _, run_loss, run_prediction=sess.run([opt, loss, train_prediction], feed_dict=feed_dictionary)
+                labels=trainDataUtil.batch_labels.astype(np.uint16)
+                feed_dictionary={self.batchInputNode:inputs, self.batchLabelNode:labels}
+                _, run_loss=sess.run([opt, loss], feed_dict=feed_dictionary)
 
                 if step % print_frequency:
-                    run_error=error_rate(run_prediction,trainDataUtil.batch_labels)
+                    run_predict=sess.run(batchPrediction, feed_dict={self.batchInputNode:inputs})
+                    run_error=error_rate(run_predict,trainDataUtil.batch_labels)
                     print("epoch: ", epoch_num, "loss:", run_loss, "error_rate:", run_error )
                     summary = sess.run(accuracyTrainSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
                     trainWriter.add_summary(summary, step)
@@ -99,10 +101,9 @@ class SupervisedNet(object):
                     ite=0
                     while hasOneEpoch==False:
                         hasOneEpoch=testDataUtil.prepare_batch()
-                        x = testDataUtil.batch_positions.astype(np.float32)
-                        y = testDataUtil.batch_labels.astype(np.int32)
-                        feed_d = {self.testInputNode: x, self.testLabelNode: y}
-                        predict = sess.run(eval_prediction, feed_dict=feed_d)
+                        x_input = testDataUtil.batch_positions.astype(np.float32)
+                        feed_d = {self.batchInputNode: x_input}
+                        predict = sess.run(batchPrediction, feed_dict=feed_d)
                         run_error = error_rate(predict, testDataUtil.batch_labels)
                         sum_run_error += run_error
                         ite +=1
@@ -120,20 +121,20 @@ class SupervisedNet(object):
 
             print("Testing error on test data is:")
             testDataUtil.close_file()
-            testDataUtil=PositionUtil(positiondata_filename=self.srcTestPathFinal, batch_size=EVAL_BATCH_SIZE)
+            testDataUtil=PositionUtil(positiondata_filename=self.srcTestPathFinal, batch_size=BATCH_SIZE)
             hasOneEpoch=False
             sum_run_error=0.0
             ite=0
             while hasOneEpoch==False:
                 hasOneEpoch = testDataUtil.prepare_batch()
-                x = testDataUtil.batch_positions.astype(np.float32)
-                y = testDataUtil.batch_labels.astype(np.int32)
-                feed_d = {self.testInputNode: x, self.testLabelNode: y}
-                predict = sess.run(eval_prediction, feed_dict=feed_d)
+                x_input = testDataUtil.batch_positions.astype(np.float32)
+                feed_d = {self.batchInputNode: x_input}
+                predict = sess.run(batchPrediction, feed_dict=feed_d)
                 run_error = error_rate(predict, testDataUtil.batch_labels)
                 sum_run_error += run_error
                 ite += 1
             print("Testing error is:", sum_run_error/ite)
+            sess.run(self.xLogits, feed_dict={self.xInputNode:fake_input}) 
         trainDataUtil.close_file()
         testDataUtil.close_file()
 
@@ -260,7 +261,7 @@ def main(argv=None):
    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train.txt",
                        srcTestDataPath="storage/position-action/8x8/validate.txt",
                        srcTestPathFinal="storage/position-action/8x8/test.txt")
-   slnet.train(15000)
+   slnet.train(100000)
 
 if __name__ == "__main__":
     tf.app.run()

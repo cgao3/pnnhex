@@ -5,6 +5,8 @@ from __future__ import division
 import  re
 import os
 from zobrist.zobrist import *
+import argparse
+
 #Smart Game Format
 ''''
 First need to convert a .sgf game into a list of positions.
@@ -106,6 +108,9 @@ def process3():
     output = "8x8-raw4.txt"
     SgfUtil.process_convert(src_dir, output, offset=1)
     SgfUtil.remove_duplicates_and_write(output, boardsize=8)
+
+def process_from_cmd():
+    parser=argparse.ArgumentParser(description="Use SgfUtils to convert sgf files into state-action data or state-value data")
 
 
 if __name__ == "__main__":

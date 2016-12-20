@@ -17,13 +17,13 @@ INPUT_DEPTH = 5
 EVAL_BATCH_SIZE=440
 
 class ValueUtil(object):
-    def __init__(self, srcStateActionFileName, batch_size):
-        self.data_file_name=srcStateActionFileName
+    def __init__(self, srcStateValueFileName, batch_size):
+        self.data_file_name=srcStateValueFileName
         self.batch_size=batch_size
         self.reader=open(self.data_file_name, "r")
 
         self.batch_positions=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint32)
-        self.batch_labels = np.ndarray(shape=(batch_size,), dtype=np.uint16)
+        self.batch_labels = np.ndarray(shape=(batch_size,), dtype=np.int16)
         self.currentLine = 0
         self._board = np.ndarray(dtype=np.int32, shape=(INPUT_WIDTH, INPUT_WIDTH))
 

@@ -110,8 +110,7 @@ def process3():
     SgfUtil.remove_duplicates_and_write(output, boardsize=8)
 
 def process_from_cmd():
-    parser=argparse.ArgumentParser(description="Use SgfUtils to convert sgf files into state-action data or state-value data")
-
+    parser=argparse.ArgumentParser(description="Use SgfUtils to convert sgf files into state-action data or ")
 
 if __name__ == "__main__":
     #process3()

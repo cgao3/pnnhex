@@ -16,7 +16,7 @@ SLMODEL_NAME="slmodel.ckpt"
 
 
 tf.flags.DEFINE_string("summaries_dir","/tmp/slnet_logs", "where the summaries are")
-tf.app.flags.DEFINE_integer("nSteps", 40000, "number of training steps")
+tf.app.flags.DEFINE_integer("nSteps", 40001, "number of training steps")
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -65,8 +65,8 @@ class SupervisedNet(object):
         testDataUtil = PositionUtil3(positiondata_filename=self.srcTestPath, batch_size=BATCH_SIZE)
 
         accuracyPlaceholder = tf.placeholder(tf.float32)
-        accuracyTrainSummary = tf.scalar_summary("Accuracy (Training)", accuracyPlaceholder)
-        accuracyValidateSummary = tf.scalar_summary("Accuracy (Validating)", accuracyPlaceholder)
+        accuracyTrainSummary = tf.summary.scalar("Accuracy (Training)", accuracyPlaceholder)
+        accuracyValidateSummary = tf.summary.scalar("Accuracy (Validating)", accuracyPlaceholder)
 
         saver=tf.train.Saver()
         print_frequency=20

@@ -22,8 +22,8 @@ class ValueUtil(object):
         self.batch_size=batch_size
         self.reader=open(self.data_file_name, "r")
 
-        self.batch_positions=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint32)
-        self.batch_labels = np.ndarray(shape=(batch_size,), dtype=np.int16)
+        self.batch_positions=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.int32)
+        self.batch_labels = np.ndarray(shape=(batch_size,), dtype=np.float16)
         self.currentLine = 0
         self._board = np.ndarray(dtype=np.int32, shape=(INPUT_WIDTH, INPUT_WIDTH))
 
@@ -50,8 +50,8 @@ class ValueUtil(object):
     #position-action the last one is a move
     def _build_batch_at(self, kth, line):
         arr=line.strip().split()
-        outcome=arr[-1] # win or lose
-        assert(outcome==1 or outcome==-1)
+        outcome=int(arr[-1]) # win or lose
+        assert(outcome==1 or outcome==0)
         self.batch_labels[kth]=outcome
 
         self.batch_positions[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1

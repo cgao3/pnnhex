@@ -136,22 +136,22 @@ def process0():
 
 def process1():
     sgfutil=SgfUtil(boardsize=8, offset=1,
-                    srcDir="/home/cgao/Documents/hex_data/8x8",
-                    outputname="8x8-raw0.txt",
+                    srcDir="/home/cgao/Documents/hex_data/8x8-1-1/2/8x8-mohex-vs-mohex-1-stone-opening",
+                    outputname="8x8-raw21.txt",
                     withvalue=True)
     sgfutil.performConvert()
 
 def process2():
     sgfutil=SgfUtil(boardsize=8, offset=2,
                     srcDir="/home/cgao/Documents/hex_data/8x8-two-stones-openings/silurian_data/8x8-mohex-mohex-14s-vs-wolve-wolve-12s",
-                    outputname="8x8-SA2.txt",
-                    withvalue=False)
+                    outputname="8x8-SA23.txt",
+                    withvalue=True)
     sgfutil.performConvert()
 
 def processRemoveDuplicates():
-    filename="tmp.txt"
+    filename="train.txt"
     sgfutil=SgfUtil(boardsize=8, offset=2,
-                    srcDir=None, outputname=None, withvalue=False)
+                    srcDir=None, outputname=None, withvalue=True)
     sgfutil.removeDuplicatesAndWrite(filename)
 
 if __name__ == "__main__":

@@ -9,13 +9,14 @@ from neuralnet.layer import Layer
 import os
 from utils.read_data import *
 from neuralnet.supervised import MODELS_DIR
-VALUE_NET_MODEL_NAME="valuemodel.ckpt"
 
-tf.flags.DEFINE_string("summaries_dir","/tmp/valuenet_logs", "where the summaries are")
-tf.flags.DEFINE_integer("nSteps", 5000, "number of steps to train value net")
+
+VALUE_NET_MODEL_NAME="value_model.ckpt"
+tf.flags.DEFINE_string("summaries_dir2","/tmp/valuenet_logs", "where the summaries are")
+tf.flags.DEFINE_integer("nSteps2", 500000, "number of steps to train value net")
 tf.flags.DEFINE_float("learing_rate", 0.001, "value of learning rate")
-FLAGS=tf.flags.FLAGS
 
+FLAGS=tf.app.flags.FLAGS
 class ValueNet2(object):
     def __init__(self, srcTrainDataPath, srcTestDataPath, srcTestPathFinal=None):
         self.srcTrainPath = srcTrainDataPath
@@ -44,7 +45,7 @@ class ValueNet2(object):
         self.batchInputNode = tf.placeholder(dtype=tf.float32,
                                              shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),
                                              name="BatchTrainInputNode")
-        self.batchLabelNode = tf.placeholder(dtype=tf.int32, shape=(BATCH_SIZE,), name="BatchTrainLabelNode")
+        self.batchLabelNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE,), name="BatchTrainLabelNode")
 
         self.xInputNode = tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),
                                          name="x_input_node")
@@ -63,8 +64,8 @@ class ValueNet2(object):
         testDataUtil = ValueUtil(self.srcTestPath, batch_size=BATCH_SIZE)
 
         msePlaceholder = tf.placeholder(tf.float32)
-        mseTrainSummary = tf.scalar_summary("Mean Square Error (Training)", msePlaceholder)
-        mseValidateSummary = tf.scalar_summary("Mean Square Error (Validating)", msePlaceholder)
+        mseTrainSummary = tf.summary.scalar("Mean Square Error (Training)", msePlaceholder)
+        mseValidateSummary = tf.summary.scalar("Mean Square Error (Validating)", msePlaceholder)
 
         saver = tf.train.Saver()
         print_frequency = 20
@@ -75,15 +76,15 @@ class ValueNet2(object):
             init = tf.initialize_all_variables()
             sess.run(init)
             print("Initialized all variables!")
-            trainWriter = tf.summary.FileWriter(FLAGS.summaries_dir + "/" + repr(nSteps) + "/train", sess.graph)
-            validateWriter = tf.summary.FileWriter(FLAGS.summaries_dir + "/" + repr(nSteps) + "/validate", sess.graph)
+            trainWriter = tf.summary.FileWriter(FLAGS.summaries_dir2 + "/" + repr(nSteps) + "/train", sess.graph)
+            validateWriter = tf.summary.FileWriter(FLAGS.summaries_dir2 + "/" + repr(nSteps) + "/validate", sess.graph)
             # trainWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/train", sess.graph)
             # validateWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/validate", sess.graph)
             while step < nSteps:
                 nextEpoch = trainDataUtil.prepare_batch()
                 if nextEpoch: epoch_num += 1
                 inputs = trainDataUtil.batch_positions.astype(np.float32)
-                labels = trainDataUtil.batch_labels.astype(np.uint16)
+                labels = trainDataUtil.batch_labels.astype(np.float32)
                 feed_dictionary = {self.batchInputNode: inputs, self.batchLabelNode: labels}
                 _, run_error = sess.run([opt, MSE], feed_dict=feed_dictionary)
 
@@ -104,7 +105,7 @@ class ValueNet2(object):
                         ite += 1
                     run_error = sum_run_error / ite
                     print("Validation MSE", run_error)
-                    summary = sess.run(mseValidateSummary, feed_dict={msePlaceholder: 100.0 - run_error})
+                    summary = sess.run(mseValidateSummary, feed_dict={msePlaceholder: run_error})
                     validateWriter.add_summary(summary, step)
 
                 step += 1
@@ -134,15 +135,15 @@ class ValueNet2(object):
 
 
 def main(argv=None):
-    vnet=ValueNet2(srcTrainDataPath="p1",
-                   srcTestDataPath="p2",
-                   srcTestPathFinal="p3")
+    vnet=ValueNet2(srcTrainDataPath="storage/position-value/8x8/train.txt",
+                   srcTestDataPath="storage/position-value/8x8/validate.txt",
+                   srcTestPathFinal="storage/position-value/8x8/test.txt")
 
-    if tf.gfile.Exists(FLAGS.summaries_dir):
-        tf.gfile.DeleteRecursively(FLAGS.summaries_dir)
-    tf.gfile.MakeDirs(FLAGS.summaries_dir)
+    if tf.gfile.Exists(FLAGS.summaries_dir2):
+        tf.gfile.DeleteRecursively(FLAGS.summaries_dir2)
+    tf.gfile.MakeDirs(FLAGS.summaries_dir2)
 
-    vnet.train(FLAGS.nSteps)
+    vnet.train(FLAGS.nSteps2)
 
 if __name__ == "__main__":
     tf.app.run()

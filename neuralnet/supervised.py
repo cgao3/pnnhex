@@ -141,6 +141,12 @@ class SupervisedNet(object):
 def error_rate(predictions, labels):
     return 100.0 - 100.0 * np.sum(np.argmax(predictions, 1) == labels) / predictions.shape[0]
 
+def error_topk(predictions, labels, k):
+    tmp=np.argsort(predictions, 1)[:,-k:]
+    t2=[e for ind, e in enumerate(tmp) if labels[ind] in tmp[ind]]
+
+    return 100.0-len(t2)*1.0/predictions.shape[0]
+
 def main(argv=None):
    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train.txt",
                        srcTestDataPath="storage/position-action/8x8/validate.txt",

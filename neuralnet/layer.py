@@ -74,13 +74,12 @@ class Layer(object):
         with tf.variable_scope(self.layer_name+"_2"):
             #out2=self._dropout(out1, keep_prob)
             out3=self._fully_connected(out1, 1, "tanh")
-            return tf.squeeze(out3)
+            return tf.squeeze(out3, name="value_output_node")
 
     #fully-connected layer can be seen as convolutions: num_units is number of filters,
     #kernal size is equal to (input_width, input_height)
     def _fully_connected(self, input_tensor, num_units, unit_type):
         input_shape=input_tensor.get_shape()
-        print("input_shape", input_shape)
         weight_shape=(input_shape[1], input_shape[2], input_shape[3], num_units)
         bias_shape=(num_units,)
         out=self._conv2d(input_tensor, weight_shape, bias_shape)

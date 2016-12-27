@@ -33,7 +33,7 @@ class SupervisedNet(object):
         self.inputLayer=Layer("InputLayer", paddingMethod="VALID")
         self.convLayers=[Layer("ConvLayer%d"%i) for i in xrange(nLayers)]
 
-    def model(self, dataNode, kernalSize=(3,3), kernalDepth=64):
+    def model(self, dataNode, kernalSize=(3,3), kernalDepth=32):
         weightShape=kernalSize+(INPUT_DEPTH, kernalDepth)
         output=self.inputLayer.convolve(dataNode, weight_shape=weightShape, bias_shape=(kernalDepth,))
 
@@ -44,6 +44,17 @@ class SupervisedNet(object):
         logits=self.convLayers[self.nLayers-1].move_logits(output, BOARD_SIZE)
         return logits
 
+    def inference(self, lastcheckpoint):
+        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
+        fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        self._setup_architecture(nLayers=3)
+        self.xLogits = self.model(self.xInputNode)
+        saver = tf.train.Saver()
+        with tf.Session() as sess:
+            saver.restore(sess, lastcheckpoint)
+            logits=sess.run(self.xLogits, feed_dict={self.xInputNode:fake_input})
+            print(logits)
+
     def train(self, nSteps):
         self.batchInputNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),name="BatchTrainInputNode")
         self.batchLabelNode = tf.placeholder(dtype=tf.int32, shape=(BATCH_SIZE,), name="BatchTrainLabelNode")
@@ -52,7 +63,7 @@ class SupervisedNet(object):
         fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         fake_input.fill(0)
 
-        self._setup_architecture(nLayers=5)
+        self._setup_architecture(nLayers=3)
         batchLogits=self.model(self.batchInputNode)
         batchPrediction=tf.nn.softmax(batchLogits)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(batchLogits, self.batchLabelNode))
@@ -74,7 +85,7 @@ class SupervisedNet(object):
         step=0
         epoch_num=0
         with tf.Session() as sess:
-            init=tf.initialize_all_variables()
+            init=tf.variables_initializer(tf.global_variables(), name="init_node")
             sess.run(init)
             print("Initialized all variables!")
             trainWriter = tf.summary.FileWriter(FLAGS.summaries_dir+"/"+repr(nSteps)+"/train", sess.graph)
@@ -124,16 +135,24 @@ class SupervisedNet(object):
             testDataUtil=PositionUtil3(positiondata_filename=self.srcTestPathFinal, batch_size=BATCH_SIZE)
             hasOneEpoch=False
             sum_run_error=0.0
+            sum2=0.0
             ite=0
+            KValue=3
             while hasOneEpoch==False:
                 hasOneEpoch = testDataUtil.prepare_batch()
                 x_input = testDataUtil.batch_positions.astype(np.float32)
                 feed_d = {self.batchInputNode: x_input}
                 predict = sess.run(batchPrediction, feed_dict=feed_d)
                 run_error = error_rate(predict, testDataUtil.batch_labels)
+                top_k_run_error= error_topk(predict, testDataUtil.batch_labels, k=KValue)
                 sum_run_error += run_error
+                sum2 +=top_k_run_error
                 ite += 1
             print("Testing error is:", sum_run_error/ite)
+            writeout=open("test_error.txt","w")
+            writeout.write("Testing error is: "+repr(sum_run_error/ite));
+            writeout.write("top "+ repr(KValue)+" error: "+repr(sum2/ite))
+            writeout.close()
             sess.run(self.xLogits, feed_dict={self.xInputNode:fake_input}) 
         trainDataUtil.close_file()
         testDataUtil.close_file()
@@ -144,13 +163,12 @@ def error_rate(predictions, labels):
 def error_topk(predictions, labels, k):
     tmp=np.argsort(predictions, 1)[:,-k:]
     t2=[e for ind, e in enumerate(tmp) if labels[ind] in tmp[ind]]
-
     return 100.0-len(t2)*1.0/predictions.shape[0]
 
 def main(argv=None):
-   slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train.txt",
-                       srcTestDataPath="storage/position-action/8x8/validate.txt",
-                       srcTestPathFinal="storage/position-action/8x8/test.txt")
+   slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train1.txt",
+                       srcTestDataPath="storage/position-action/8x8/validate1.txt",
+                       srcTestPathFinal="storage/position-action/8x8/test1.txt")
    slnet.train(FLAGS.nSteps)
 
 if __name__ == "__main__":

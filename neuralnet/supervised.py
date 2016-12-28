@@ -17,7 +17,8 @@ SLMODEL_NAME="slmodel.ckpt"
 
 tf.flags.DEFINE_string("summaries_dir","/tmp/slnet_logs", "where the summaries are")
 tf.app.flags.DEFINE_integer("nSteps", 40001, "number of training steps")
-
+tf.app.flags.DEFINE_boolean("inference", False, "for inference?")
+tf.app.flags.DEFINE_string("slmodel_path", MODELS_DIR+SLMODEL_NAME, "for inference, please indicate SL Model path.")
 FLAGS = tf.app.flags.FLAGS
 
 '''game positions supervised learning'''
@@ -46,14 +47,20 @@ class SupervisedNet(object):
 
     def inference(self, lastcheckpoint):
         self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
-        fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        putil=PositionUtil3(positiondata_filename="dumpy.txt", batch_size=1)
+        putil.prepare_batch()
         self._setup_architecture(nLayers=3)
         self.xLogits = self.model(self.xInputNode)
         saver = tf.train.Saver()
         with tf.Session() as sess:
             saver.restore(sess, lastcheckpoint)
-            logits=sess.run(self.xLogits, feed_dict={self.xInputNode:fake_input})
+            logits=sess.run(self.xLogits, feed_dict={self.xInputNode:putil.batch_positions})
             print(logits)
+            action=np.argmax(logits, 1)[0]
+            x,y=action//BOARD_SIZE, action%BOARD_SIZE
+            y +=1
+            print("prediction: "+chr((ord('a')+x))+repr(y))
+        putil.close_file()
 
     def train(self, nSteps):
         self.batchInputNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),name="BatchTrainInputNode")
@@ -63,7 +70,7 @@ class SupervisedNet(object):
         fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         fake_input.fill(0)
 
-        self._setup_architecture(nLayers=3)
+        self._setup_architecture(nLayers=4)
         batchLogits=self.model(self.batchInputNode)
         batchPrediction=tf.nn.softmax(batchLogits)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(batchLogits, self.batchLabelNode))
@@ -150,8 +157,8 @@ class SupervisedNet(object):
                 ite += 1
             print("Testing error is:", sum_run_error/ite)
             writeout=open("test_error.txt","w")
-            writeout.write("Testing error is: "+repr(sum_run_error/ite));
-            writeout.write("top "+ repr(KValue)+" error: "+repr(sum2/ite))
+            writeout.write("Testing error is: "+repr(sum_run_error/ite)+'\n')
+            writeout.write("Top "+ repr(KValue)+" error: "+repr(sum2/ite))
             writeout.close()
             sess.run(self.xLogits, feed_dict={self.xInputNode:fake_input}) 
         trainDataUtil.close_file()
@@ -161,15 +168,20 @@ def error_rate(predictions, labels):
     return 100.0 - 100.0 * np.sum(np.argmax(predictions, 1) == labels) / predictions.shape[0]
 
 def error_topk(predictions, labels, k):
-    tmp=np.argsort(predictions, 1)[:,-k:]
-    t2=[e for ind, e in enumerate(tmp) if labels[ind] in tmp[ind]]
-    return 100.0-len(t2)*1.0/predictions.shape[0]
+    sortedIndArray=np.argsort(predictions, 1)[:,-k:]
+    correctArray=[e for ind, e in enumerate(labels) if labels[ind] in sortedIndArray[ind]]
+    return 100.0-100.0*len(correctArray)/predictions.shape[0]
 
 def main(argv=None):
-   slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train1.txt",
+    if FLAGS.inference:
+        slnet=SupervisedNet(srcTestDataPath=None, srcTrainDataPath=None, srcTestPathFinal=None)
+        slnet.inference(FLAGS.slmodel_path)
+        return
+
+    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train1.txt",
                        srcTestDataPath="storage/position-action/8x8/validate1.txt",
                        srcTestPathFinal="storage/position-action/8x8/test1.txt")
-   slnet.train(FLAGS.nSteps)
+    slnet.train(FLAGS.nSteps)
 
 if __name__ == "__main__":
     tf.app.run()

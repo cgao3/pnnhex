@@ -98,8 +98,11 @@ class SgfUtil:
             for line in f:
                 line=line.strip()
                 movesquence=line.split()
+                value=-1
                 if self.withValue:
+                    value = int(movesquence[-1])
                     movesquence=movesquence[:-1]
+                    assert(value==0 or value==1)
                 intmoveseq=[]
                 for m in movesquence:
                     move=m[2:4]
@@ -107,7 +110,23 @@ class SgfUtil:
                     y=ord(move[1])-ord('0')-1
                     intmoveseq.append(x*self.boardsize+y)
                 code=hashUtil.get_hash(intmoveseq)
-                tt[code]=line
+                if self.withValue:
+                    if code in tt:
+                        mq, one_count, zero_count=tt[code]
+                        if value==1:
+                            one_count +=1
+                        else:
+                            zero_count +=1
+                        tt[code]=(mq, one_count, zero_count)
+                    else:
+                        one_count=0
+                        zero_count=0
+                        if value==1:
+                            one_count=1
+                        else: zero_count=1
+                        tt[code]=(movesquence, one_count, zero_count)
+                else:
+                    tt[code]=line
 
         outfile=file_name+"_no_duplicates"
         print("size: ", len(tt.values()))
@@ -115,8 +134,15 @@ class SgfUtil:
         with open(outfile, "w+") as f:
             for line in tt.values():
                 #print(line)
-                f.write(line)
-                f.write('\n')
+                if self.withValue:
+                    mq, one_count, zero_count = line
+                    for m in mq:
+                        f.write(m+' ')
+                    res=one_count*1.0/(one_count+zero_count)
+                    f.write(repr(res)+'\n')
+                else:
+                    f.write(line)
+                    f.write('\n')
 def test():
     sgf = ""
     with open("/home/cgao/Documents/hex_data/8x8/0000.sgf") as f:
@@ -148,6 +174,14 @@ def process2():
                     withvalue=True)
     sgfutil.performConvert()
 
+def processMe():
+    sgfutil = SgfUtil(boardsize=8, offset=1,
+                      srcDir="/home/cgao3/Documents/hex_data/jobs/1-8x8-mohex-vs-wolve",
+                      outputname="8x8-value.txt",
+                      withvalue=True)
+    sgfutil.performConvert()
+
+
 def processRemoveDuplicates():
     filename="train.txt"
     sgfutil=SgfUtil(boardsize=8, offset=2,
@@ -156,4 +190,5 @@ def processRemoveDuplicates():
 
 if __name__ == "__main__":
     #process2()
-    processRemoveDuplicates()
+    #processRemoveDuplicates()
+    processMe()

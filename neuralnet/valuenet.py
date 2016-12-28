@@ -16,6 +16,9 @@ tf.flags.DEFINE_string("summaries_dir2","/tmp/valuenet_logs", "where the summari
 tf.flags.DEFINE_integer("nSteps2", 500000, "number of steps to train value net")
 tf.flags.DEFINE_float("learing_rate", 0.001, "value of learning rate")
 
+tf.flags.DEFINE_boolean("inference2", False, "please set True if just for value inference.")
+tf.flags.DEFINE_string("value_model_path", MODELS_DIR+VALUE_NET_MODEL_NAME, "please indicate value model path if just for inference")
+
 FLAGS=tf.app.flags.FLAGS
 class ValueNet2(object):
     def __init__(self, srcTrainDataPath, srcTestDataPath, srcTestPathFinal=None):
@@ -40,6 +43,22 @@ class ValueNet2(object):
         self.valueLayer=Layer("ValueOutputLayer", paddingMethod="VALID")
         value=self.valueLayer.value_estimation(logits, numValueUnits)
         return value
+
+    def inference(self, lastcheckpoint):
+        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
+        vutil=ValueUtil(srcStateValueFileName="value_dumpy.txt", batch_size=1)
+        vutil.prepare_batch()
+        self._setup_architecture(nLayers=5)
+        self.x_value = self.model(self.xInputNode)
+        saver = tf.train.Saver()
+        with tf.Session() as sess:
+            saver.restore(sess, lastcheckpoint)
+            value_estimate=sess.run(self.x_value, feed_dict={self.xInputNode:vutil.batch_positions})
+            print(value_estimate)
+            print("value estimation: "+repr(value_estimate))
+            print("correct value: ", vutil.batch_labels)
+        vutil.close_file()
+
 
     def train(self, nSteps):
         self.batchInputNode = tf.placeholder(dtype=tf.float32,
@@ -135,6 +154,11 @@ class ValueNet2(object):
 
 
 def main(argv=None):
+    if FLAGS.inference2:
+        vnet=ValueNet2(srcTestPathFinal=None, srcTrainDataPath=None, srcTestDataPath=None)
+        vnet.inference(FLAGS.value_model_path)
+        return
+
     vnet=ValueNet2(srcTrainDataPath="storage/position-value/8x8/train.txt",
                    srcTestDataPath="storage/position-value/8x8/validate.txt",
                    srcTestPathFinal="storage/position-value/8x8/test.txt")

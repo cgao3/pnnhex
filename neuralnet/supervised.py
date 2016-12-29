@@ -34,7 +34,7 @@ class SupervisedNet(object):
         self.inputLayer=Layer("InputLayer", paddingMethod="VALID")
         self.convLayers=[Layer("ConvLayer%d"%i) for i in xrange(nLayers)]
 
-    def model(self, dataNode, kernalSize=(3,3), kernalDepth=32):
+    def model(self, dataNode, kernalSize=(3,3), kernalDepth=48):
         weightShape=kernalSize+(INPUT_DEPTH, kernalDepth)
         output=self.inputLayer.convolve(dataNode, weight_shape=weightShape, bias_shape=(kernalDepth,))
 
@@ -49,7 +49,7 @@ class SupervisedNet(object):
         self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
         putil=PositionUtil3(positiondata_filename="dumpy.txt", batch_size=1)
         putil.prepare_batch()
-        self._setup_architecture(nLayers=3)
+        self._setup_architecture(nLayers=5)
         self.xLogits = self.model(self.xInputNode)
         saver = tf.train.Saver()
         with tf.Session() as sess:
@@ -70,7 +70,7 @@ class SupervisedNet(object):
         fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         fake_input.fill(0)
 
-        self._setup_architecture(nLayers=4)
+        self._setup_architecture(nLayers=5)
         batchLogits=self.model(self.batchInputNode)
         batchPrediction=tf.nn.softmax(batchLogits)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(batchLogits, self.batchLabelNode))

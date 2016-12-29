@@ -31,7 +31,7 @@ class ValueNet2(object):
         self.inputLayer = Layer("InputLayer", paddingMethod="VALID")
         self.convLayers = [Layer("ConvLayer%d" % i) for i in xrange(nLayers)]
 
-    def model(self, dataNode, kernalSize=(3, 3), kernalDepth=64, numValueUnits=48):
+    def model(self, dataNode, kernalSize=(3, 3), kernalDepth=48, numValueUnits=48):
         weightShape = kernalSize + (INPUT_DEPTH, kernalDepth)
         output = self.inputLayer.convolve(dataNode, weight_shape=weightShape, bias_shape=(kernalDepth,))
 

@@ -89,6 +89,7 @@ class ValueNet2(object):
         saver = tf.train.Saver()
         print_frequency = 20
         test_frequency = 50
+        save_frequency = 20000
         step = 0
         epoch_num = 0
         with tf.Session() as sess:
@@ -97,8 +98,8 @@ class ValueNet2(object):
             print("Initialized all variables!")
             trainWriter = tf.summary.FileWriter(FLAGS.summaries_dir2 + "/" + repr(nSteps) + "/train", sess.graph)
             validateWriter = tf.summary.FileWriter(FLAGS.summaries_dir2 + "/" + repr(nSteps) + "/validate", sess.graph)
-            # trainWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/train", sess.graph)
-            # validateWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/validate", sess.graph)
+
+            sl_model_dir = os.path.dirname(MODELS_DIR)
             while step < nSteps:
                 nextEpoch = trainDataUtil.prepare_batch()
                 if nextEpoch: epoch_num += 1
@@ -126,16 +127,18 @@ class ValueNet2(object):
                     print("Validation MSE", run_error)
                     summary = sess.run(mseValidateSummary, feed_dict={msePlaceholder: run_error})
                     validateWriter.add_summary(summary, step)
+                if step>40000 and step%save_frequency==0:
+                    saver.save(sess, os.path.join(sl_model_dir, VALUE_NET_MODEL_NAME), global_step=step)
 
                 step += 1
             print("saving value net computation graph for c++ inference")
-            sl_model_dir = os.path.dirname(MODELS_DIR)
             tf.train.write_graph(sess.graph_def, sl_model_dir, "valuegraph.pbtxt")
             tf.train.write_graph(sess.graph_def, sl_model_dir, "valuegraph.pb", as_text=False)
             saver.save(sess, os.path.join(sl_model_dir, VALUE_NET_MODEL_NAME), global_step=step)
 
-            print("Testing error on test data is:")
             testDataUtil.close_file()
+            print("On test data...")
+            valueTestResFile=open("value_test_result.txt", "w")
             testDataUtil = ValueUtil(self.srcTestPathFinal, batch_size=BATCH_SIZE)
             hasOneEpoch = False
             sum_run_error = 0.0
@@ -148,6 +151,9 @@ class ValueNet2(object):
                 sum_run_error += run_error
                 ite += 1
             print("Testing MSE is:", sum_run_error / ite)
+            valueTestResFile.write("Overall Testing MSE is "+repr(sum_run_error/ite))
+            valueTestResFile.close()
+
             sess.run(self.xLogits, feed_dict={self.xInputNode: fake_input})
         trainDataUtil.close_file()
         testDataUtil.close_file()

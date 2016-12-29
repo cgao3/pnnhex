@@ -89,16 +89,18 @@ class SupervisedNet(object):
         saver=tf.train.Saver()
         print_frequency=20
         test_frequency=50
+        save_frequency=20000
         step=0
         epoch_num=0
+
         with tf.Session() as sess:
             init=tf.variables_initializer(tf.global_variables(), name="init_node")
             sess.run(init)
             print("Initialized all variables!")
             trainWriter = tf.summary.FileWriter(FLAGS.summaries_dir+"/"+repr(nSteps)+"/train", sess.graph)
             validateWriter = tf.summary.FileWriter(FLAGS.summaries_dir +"/"+repr(nSteps)+ "/validate", sess.graph)
-            #trainWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/train", sess.graph)
-            #validateWriter = tf.train.SummaryWriter(FLAGS.summaries_dir + "/validate", sess.graph)
+
+            sl_model_dir = os.path.dirname(MODELS_DIR)
             while step < nSteps:
                 nextEpoch=trainDataUtil.prepare_batch()
                 if nextEpoch: epoch_num += 1
@@ -129,10 +131,10 @@ class SupervisedNet(object):
                     print("evaluation error rate", run_error)
                     summary = sess.run(accuracyValidateSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
                     validateWriter.add_summary(summary, step)
-
+                if step>=40000 and step %save_frequency==0:
+                    saver.save(sess, os.path.join(sl_model_dir, SLMODEL_NAME), global_step=step)
                 step += 1
             print("saving computation graph for c++ inference")
-            sl_model_dir = os.path.dirname(MODELS_DIR)
             tf.train.write_graph(sess.graph_def, sl_model_dir, "graph.pbtxt")
             tf.train.write_graph(sess.graph_def, sl_model_dir, "graph.pb", as_text=False)
             saver.save(sess, os.path.join(sl_model_dir, SLMODEL_NAME), global_step=step)

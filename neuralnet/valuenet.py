@@ -13,7 +13,7 @@ from neuralnet.supervised import MODELS_DIR
 
 VALUE_NET_MODEL_NAME="value_model.ckpt"
 tf.flags.DEFINE_string("summaries_dir2","/tmp/valuenet_logs", "where the summaries are")
-tf.flags.DEFINE_integer("nSteps2", 500000, "number of steps to train value net")
+tf.flags.DEFINE_integer("nSteps2", 5000, "number of steps to train value net")
 tf.flags.DEFINE_float("learing_rate", 0.001, "value of learning rate")
 
 tf.flags.DEFINE_boolean("inference2", False, "please set True if just for value inference.")
@@ -93,7 +93,7 @@ class ValueNet2(object):
         step = 0
         epoch_num = 0
         with tf.Session() as sess:
-            init = tf.initialize_all_variables()
+            init = tf.global_variables_initializer()
             sess.run(init)
             print("Initialized all variables!")
             trainWriter = tf.summary.FileWriter(FLAGS.summaries_dir2 + "/" + repr(nSteps) + "/train", sess.graph)
@@ -131,11 +131,12 @@ class ValueNet2(object):
                     saver.save(sess, os.path.join(sl_model_dir, VALUE_NET_MODEL_NAME), global_step=step)
 
                 step += 1
+
+            sess.run(self.xLogits, feed_dict={self.xInputNode: fake_input})
             print("saving value net computation graph for c++ inference")
             tf.train.write_graph(sess.graph_def, sl_model_dir, "valuegraph.pbtxt")
             tf.train.write_graph(sess.graph_def, sl_model_dir, "valuegraph.pb", as_text=False)
             saver.save(sess, os.path.join(sl_model_dir, VALUE_NET_MODEL_NAME), global_step=step)
-
             testDataUtil.close_file()
             print("On test data...")
             valueTestResFile=open("value_test_result.txt", "w")
@@ -154,7 +155,7 @@ class ValueNet2(object):
             valueTestResFile.write("Overall Testing MSE is "+repr(sum_run_error/ite))
             valueTestResFile.close()
 
-            sess.run(self.xLogits, feed_dict={self.xInputNode: fake_input})
+
         trainDataUtil.close_file()
         testDataUtil.close_file()
 
@@ -165,9 +166,9 @@ def main(argv=None):
         vnet.inference(FLAGS.value_model_path)
         return
 
-    vnet=ValueNet2(srcTrainDataPath="storage/position-value/8x8/train.txt",
-                   srcTestDataPath="storage/position-value/8x8/validate.txt",
-                   srcTestPathFinal="storage/position-value/8x8/test.txt")
+    vnet=ValueNet2(srcTrainDataPath="storage/position-value/Train.txt",
+                   srcTestDataPath="storage/position-value/Validate.txt",
+                   srcTestPathFinal="storage/position-value/Test.txt")
 
     if tf.gfile.Exists(FLAGS.summaries_dir2):
         tf.gfile.DeleteRecursively(FLAGS.summaries_dir2)

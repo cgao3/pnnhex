@@ -73,7 +73,7 @@ class Layer(object):
             out1=self._fully_connected(input_tensor, num_units, "relu")
         with tf.variable_scope(self.layer_name+"_2"):
             #out2=self._dropout(out1, keep_prob)
-            out3=self._fully_connected(out1, 1, "tanh")
+            out3=self._fully_connected(out1, 1, "sigmoid")
             return tf.squeeze(out3, name="value_output_node")
 
     #fully-connected layer can be seen as convolutions: num_units is number of filters,
@@ -83,8 +83,9 @@ class Layer(object):
         weight_shape=(input_shape[1], input_shape[2], input_shape[3], num_units)
         bias_shape=(num_units,)
         out=self._conv2d(input_tensor, weight_shape, bias_shape)
-        if unit_type == "tanh":
-            return tf.tanh(out)
+        if unit_type == "sigmoid":
+            return tf.sigmoid(out)
+            #return tf.tanh(out)
         elif unit_type =="relu":
             return tf.nn.relu(out)
 

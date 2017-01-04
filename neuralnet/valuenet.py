@@ -86,7 +86,7 @@ class ValueNet2(object):
         mseTrainSummary = tf.summary.scalar("Mean Square Error (Training)", msePlaceholder)
         mseValidateSummary = tf.summary.scalar("Mean Square Error (Validating)", msePlaceholder)
 
-        saver = tf.train.Saver()
+        saver = tf.train.Saver(max_to_keep=20)
         print_frequency = 20
         test_frequency = 50
         save_frequency = 20000

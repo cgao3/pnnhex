@@ -183,7 +183,7 @@ class SGFPositionValueUtil(object):
                 movesquence=line.split()
                 value = int(movesquence[-1])
                 movesquence=movesquence[:-1]
-                assert(value==0 or value==1)
+                assert(value==-1 or value==1)
                 tenaryBoard=[0]*(boardsize*boardsize)
                 turn=HexColor.BLACK
                 for m in movesquence:
@@ -217,7 +217,7 @@ class SGFPositionValueUtil(object):
                 mq, one_count, zero_count = line
                 for m in mq:
                     f.write(m+' ')
-                res=one_count*1.0/(one_count+zero_count)
+                res=(one_count-zero_count)*1.0/(one_count+zero_count)
                 f.write(repr(res)+'\n')
 
 
@@ -275,7 +275,7 @@ class SgfUtil:
             if((len(state.split())%2) + 1==winner):
                 state = state + " " + "1"
             else:
-                state = state + " " + "0"
+                state = state + " " + "-1"
             ret[i]=state
 
     def writeToFile(self, str_positions):
@@ -378,6 +378,16 @@ def positionPostprocess():
     dataPart="part.txt"
     SGFPositionActionUtil.removeDataAppearsInMain(boardsize=8, filenameMain=dataMain, filenameTest=dataPart)
 
+def positionRemoveDuplicates():
+    dataMain="pa.txt"
+    SGFPositionActionUtil.removeDuplicates(boardsize=8, infilename=dataMain)
+
+def process1():
+    outfilename = "8x8-a4.txt"
+    putil = SGFPositionActionUtil(srcdir="/home/cgao3/Documents/hex_data/a4", outfilename=outfilename,
+                                  offset=1)
+    putil.doConvertInDir()
+
 def vprocess1():
     outfilename="8x8-v1.txt"
     vutil=SGFPositionValueUtil(srcdir="/home/cgao3/Documents/hex_data/8x8", outfilename=outfilename, offset=1)
@@ -387,10 +397,18 @@ def vprocess2():
     outfilename="8x8-v2.txt"
     vutil=SGFPositionValueUtil(srcdir="/home/cgao3/Documents/hex_data/8x8-2stones-open", outfilename=outfilename, offset=2)
     vutil.doConvertInDir()
+def vprocessa4():
+    outfile="8x8-v-a4.txt"
+    vutil = SGFPositionValueUtil(srcdir="/home/cgao3/Documents/hex_data/a4", outfilename=outfile,
+                                 offset=1)
+    vutil.doConvertInDir()
 
 def vpostprocess():
     SGFPositionValueUtil.postprocess(boardsize=8, positionValuesFileName="8x8-v-main.txt")
 
 if __name__ == "__main__":
     #process0()
+    #vpostprocess()
+    #process1()
+    #positionRemoveDuplicates()
     vpostprocess()

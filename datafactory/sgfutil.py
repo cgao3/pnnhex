@@ -183,7 +183,7 @@ class SGFPositionValueUtil(object):
                 movesquence=line.split()
                 value = int(movesquence[-1])
                 movesquence=movesquence[:-1]
-                assert(value==-1 or value==1)
+                assert(value==0 or value==1)
                 tenaryBoard=[0]*(boardsize*boardsize)
                 turn=HexColor.BLACK
                 for m in movesquence:
@@ -217,7 +217,7 @@ class SGFPositionValueUtil(object):
                 mq, one_count, zero_count = line
                 for m in mq:
                     f.write(m+' ')
-                res=(one_count-zero_count)*1.0/(one_count+zero_count)
+                res=(one_count)*1.0/(one_count+zero_count)
                 f.write(repr(res)+'\n')
 
 

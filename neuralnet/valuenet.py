@@ -45,8 +45,11 @@ class ValueNet2(object):
         return value
 
     def inference(self, lastcheckpoint):
-        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
-        vutil=ValueUtil(srcStateValueFileName="value_dumpy.txt", batch_size=1)
+        srcIn="value_dumpy.txt"
+        num_lines = sum(1 for line in open(srcIn))
+        assert(num_lines>=1)
+        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(num_lines, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
+        vutil=ValueUtil(srcStateValueFileName=srcIn, batch_size=num_lines)
         vutil.prepare_batch()
         self._setup_architecture(nLayers=5)
         self.x_value = self.model(self.xInputNode)
@@ -57,6 +60,8 @@ class ValueNet2(object):
             print(value_estimate)
             print("value estimation: "+repr(value_estimate))
             print("correct value: ", vutil.batch_labels)
+            MSE = tf.reduce_mean(tf.square(tf.sub(value_estimate, vutil.batch_labels)))
+            print("MSE: ", sess.run(MSE))
         vutil.close_file()
 
 

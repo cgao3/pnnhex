@@ -46,8 +46,10 @@ class SupervisedNet(object):
         return logits
 
     def inference(self, lastcheckpoint):
-        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
-        putil=PositionUtil3(positiondata_filename="dumpy.txt", batch_size=1)
+        srcIn = "dumpy.txt"
+        num_lines = sum(1 for line in open(srcIn))
+        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(num_lines, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
+        putil=PositionUtil3(positiondata_filename=srcIn, batch_size=num_lines)
         putil.prepare_batch()
         self._setup_architecture(nLayers=5)
         self.xLogits = self.model(self.xInputNode)
@@ -55,11 +57,26 @@ class SupervisedNet(object):
         with tf.Session() as sess:
             saver.restore(sess, lastcheckpoint)
             logits=sess.run(self.xLogits, feed_dict={self.xInputNode:putil.batch_positions})
-            print(logits)
+
             action=np.argmax(logits, 1)[0]
             x,y=action//BOARD_SIZE, action%BOARD_SIZE
             y +=1
-            print("prediction: "+chr((ord('a')+x))+repr(y))
+            print("prediction: "+repr(action)+" "+chr((ord('a')+x))+repr(y))
+            print(np.argmax(logits,1))
+            batch_predict=sess.run(tf.nn.softmax(logits))
+            print(putil.batch_labels)
+            e1=error_topk(batch_predict, putil.batch_labels, k=1)
+            e2=error_topk(batch_predict, putil.batch_labels, k=2)
+            e3=error_topk(batch_predict, putil.batch_labels, k=3)
+            e4=error_topk(batch_predict, putil.batch_labels, k=4)
+            e5=error_topk(batch_predict, putil.batch_labels, k=5)
+            e6=error_topk(batch_predict, putil.batch_labels, k=6)
+            print("top 1 accuracy", 100.0-e1)
+            print("top 2 accuracy", 100.0-e2)
+            print("top 3 accuracy", 100.0 - e3)
+            print("top 4 accuracy", 100.0 - e4)
+            print("top 5 accuracy", 100.0 - e5)
+            print("top 6 accuracy", 100.0 - e6)
         putil.close_file()
 
     def train(self, nSteps):

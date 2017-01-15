@@ -171,9 +171,9 @@ def main(argv=None):
         vnet.inference(FLAGS.value_model_path)
         return
 
-    vnet=ValueNet2(srcTrainDataPath="storage/position-value/8x8/train.txt",
-                   srcTestDataPath="storage/position-value/8x8/validate.txt",
-                   srcTestPathFinal="storage/position-value/8x8/test.txt")
+    vnet=ValueNet2(srcTrainDataPath="storage/position-value/Train.txt",
+                   srcTestDataPath="storage/position-value/Validate.txt",
+                   srcTestPathFinal="storage/position-value/Test.txt")
 
     if tf.gfile.Exists(FLAGS.summaries_dir2):
         tf.gfile.DeleteRecursively(FLAGS.summaries_dir2)

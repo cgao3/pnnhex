@@ -52,7 +52,7 @@ class ValueUtil(object):
         arr=line.strip().split()
         outcome=float(arr[-1]) # win or lose
         self.batch_labels[kth]=outcome
-        assert(-0.001<outcome<1+0.0001)
+        assert(-0.001-1.0<outcome<1+0.0001)
         self.batch_positions[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
         # black occupied
         self.batch_positions[kth, 0:INPUT_WIDTH, 0, 0] = 1

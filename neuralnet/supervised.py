@@ -103,7 +103,7 @@ class SupervisedNet(object):
         accuracyTrainSummary = tf.summary.scalar("Accuracy (Training)", accuracyPlaceholder)
         accuracyValidateSummary = tf.summary.scalar("Accuracy (Validating)", accuracyPlaceholder)
 
-        saver=tf.train.Saver()
+        saver=tf.train.Saver(max_to_keep=10)
         print_frequency=20
         test_frequency=50
         save_frequency=20000
@@ -197,9 +197,9 @@ def main(argv=None):
         slnet.inference(FLAGS.slmodel_path)
         return
 
-    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/train1.txt",
-                       srcTestDataPath="storage/position-action/8x8/validate1.txt",
-                       srcTestPathFinal="storage/position-action/8x8/test1.txt")
+    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/Train.txt",
+                       srcTestDataPath="storage/position-action/Validate.txt",
+                       srcTestPathFinal="storage/position-action/Test.txt")
     slnet.train(FLAGS.nSteps)
 
 if __name__ == "__main__":

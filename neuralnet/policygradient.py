@@ -3,9 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from read_data import BOARD_SIZE, INPUT_WIDTH, INPUT_DEPTH, data_util
+from utils.read_data import BOARD_SIZE, INPUT_WIDTH, INPUT_DEPTH, data_util
 import numpy as np
-from unionfind import unionfind
+from utils.unionfind import unionfind
 import tensorflow as tf
 import time
 import os
@@ -13,15 +13,15 @@ import random
 
 from six.moves import xrange
 
-from layer import *
-from game_util import *
+from neuralnet.layer import *
+from utils.game_util import *
 
 PG_GAME_BATCH_SIZE=128
 PG_STATE_BATCH_SIZE=64
 
 PGMODEL_NAME="pgmodel.ckpt"
 
-from supervised import MODELS_DIR, SLMODEL_NAME, SLNetwork
+from neuralnet.supervised import MODELS_DIR, SLMODEL_NAME, SupervisedNet
 
 MAX_NUM_MODEL_TO_KEEP=100
 
@@ -40,8 +40,8 @@ class PGNetwork(object):
 
     def select_model(self, models_dir):
         #list all models, randomly select one
-        l2=[f for f in os.listdir(models_dir) if f.startswith(PGMODEL_NAME) and not f.endswith(".meta")]
-        return os.path.join(models_dir, np.random.choice(l2))
+        list_models=[f for f in os.listdir(models_dir) if f.startswith(PGMODEL_NAME) and not f.endswith(".meta")]
+        return os.path.join(models_dir, np.random.choice(list_models))
 
     def play_one_batch_games(self, sess, otherSess, thisLogit, otherLogit, data_node, batch_game_size, batch_reward):
 
@@ -73,11 +73,11 @@ class PGNetwork(object):
                 moves.append(action)
                 count += 1
                 #print(count, "action ", action)
-            if(gamestatus==this_player): this_win_count += 1
+            if(gamestatus == this_player): this_win_count += 1
             else: other_win_count += 1
             #print("steps ", count, "gamestatus ", gamestatus)
             R = 1.0/count if gamestatus == this_player else -1.0/count
-            games.append([-1]+moves) #first hypothesisted action is -1
+            games.append([-1] + moves) #first hypothesisted action is -1
             batch_reward[ind]=R
 
         print("this player win: ", this_win_count, "other player win: ", other_win_count)
@@ -85,8 +85,8 @@ class PGNetwork(object):
 
     def selfplay(self):
         data_node=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        slnet=SLNetwork()
-        slnet.declare_layers(num_hidden_layer=8)
+        slnet=SupervisedNet(srcTestDataPath=None, srcTrainDataPath=None, srcTestPathFinal=None)
+        #setup architecture here
 
         this_logits=slnet.model(data_node)
         saver=tf.train.Saver(max_to_keep=MAX_NUM_MODEL_TO_KEEP)

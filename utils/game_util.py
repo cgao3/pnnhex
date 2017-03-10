@@ -195,3 +195,20 @@ def max_selection(logits, currentstate):
     ret = empty_positions[max_ind]
     del empty_positions, effective_logits
     return ret
+
+class TensorUtil:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def makeEmptyBoardTensor():
+        pass
+
+    @staticmethod
+    def make_kth_boardtensor_in_batch():
+        pass
+
+
+    @staticmethod
+    def UpdateOneMoveToTensor():
+        pass

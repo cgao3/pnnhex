@@ -221,151 +221,27 @@ class SGFPositionValueUtil(object):
                 f.write(repr(res)+'\n')
 
 
-#Smart Game Format
-''''
-First need to convert a .sgf game into a list of positions.
-A directory has many .sgf games, so do them one by one.
-Save the positions in a database (a text file),
-and then remove the duplicates, save to a new file.
-'''
-class SgfUtil:
+def RewardAugment(srcPositionAction, srcPositionValue, outputname):
+    mydict={}
+    print("reward augmenting..")
+    with open(srcPositionAction) as fpa:
+        for line in fpa:
+            mydict[line.strip()]=True
 
-    pattern=r';[B|W]\[[a-zA-Z][1-9]+\]'
-    result_pattern=r';[B|W]\[resign\]'
-    result_pattern2=r'RE\[[B|W]\+\]'
-
-    #convert a sgf Hex game to a list of positions, last
-    #offset=k means positions at least have k move, k>=0, last move. for openning play sgfs, k=1 (discard empty board state)
-    #for state-value data, offset is number of stones in the state, k must >=1.
-    def __init__(self, boardsize, srcDir, outputname, offset=1, withvalue=False):
-        self.boardsize=boardsize
-        self.offset=offset
-        self.withValue=withvalue
-        self.outfilename=outputname
-        self.sgfDir=srcDir
-
-    def toStateActions(self, sgfgame, ret):
-        game=re.findall(self.pattern, sgfgame)
-        x=""
-        for i, rawMove in enumerate(game):
-            x +=rawMove[1:]+" "
-            if i < self.offset:
-                continue
-            ret.append(x.strip())
-        return ret
-
-    def toStates(self, sgfgame, ret):
-        game=re.findall(self.pattern, sgfgame)
-        x=""
-        for i, rawMove in enumerate(game):
-            x +=rawMove[1:]+" "
-            if i < self.offset-1:
-                continue
-            ret.append(x.strip())
-        return ret
-
-    def toStateValues(self, sgfgame, ret):
-        assert(self.offset>=1)
-        result_str=re.findall(self.result_pattern2, sgfgame)
-        self.toStates(sgfgame, ret)
-        result_str=result_str[0]
-        winner=HexColor.BLACK if result_str[3]=='B' else HexColor.WHITE
-        for i, state in enumerate(ret):
-            #print(state, len(state)%2)
-            if((len(state.split())%2) + 1==winner):
-                state = state + " " + "1"
-            else:
-                state = state + " " + "-1"
-            ret[i]=state
-
-    def writeToFile(self, str_positions):
-        out=open(self.outfilename, "a")
-        for posi in str_positions:
-            out.write(posi)
-            out.write('\n')
-        out.close()
-
-    #convert all .sgf games in a directory
-    def performConvert(self):
-        onlyfiles = [f for f in os.listdir(self.sgfDir) if os.path.isfile(os.path.join(self.sgfDir, f))]
-        print("processing convert...")
-        for f in onlyfiles:
-            print("converting", f)
-            infile=open(os.path.join(self.sgfDir, f), "r")
-            sgfgame=infile.read()
-            data=[]
-            if not self.withValue:
-                self.toStateActions(sgfgame, data)
-            else: #state-value
-                self.toStateValues(sgfgame,data)
-            self.writeToFile(data)
-            infile.close()
-        print("removing duplicates...")
-        self.removeDuplicatesAndWrite(self.outfilename)
-        print("Done.")
-
-    #remove duplicate and save in a new file
-    def removeDuplicatesAndWrite(self, file_name):
-        tt={}
-        hashUtil=ZobristHash(boardsize=self.boardsize)
-        with open(file_name) as f:
-            for line in f:
-                line=line.strip()
-                movesquence=line.split()
-                value=-1
-                if self.withValue:
-                    value = int(movesquence[-1])
-                    movesquence=movesquence[:-1]
-                    assert(value==0 or value==1)
-                intmoveseq=[]
-                for m in movesquence:
-                    move=m[2:4]
-                    x=ord(move[0].lower())-ord('a')
-                    y=ord(move[1])-ord('0')-1
-                    intmoveseq.append(x*self.boardsize+y)
-                code=hashUtil.get_hash(intmoveseq)
-                if self.withValue:
-                    if code in tt:
-                        mq, one_count, zero_count=tt[code]
-                        if value==1:
-                            one_count +=1
-                        else:
-                            zero_count +=1
-                        tt[code]=(mq, one_count, zero_count)
-                    else:
-                        one_count=0
-                        zero_count=0
-                        if value==1:
-                            one_count=1
-                        else: zero_count=1
-                        tt[code]=(movesquence, one_count, zero_count)
-                else:
-                    tt[code]=line
-
-        outfile=file_name+"_no_duplicates"
-        print("size: ", len(tt.values()))
-        print("saved as", outfile)
-        with open(outfile, "w+") as f:
-            for line in tt.values():
-                #print(line)
-                if self.withValue:
-                    mq, one_count, zero_count = line
-                    for m in mq:
-                        f.write(m+' ')
-                    res=one_count*1.0/(one_count+zero_count)
-                    f.write(repr(res)+'\n')
-                else:
-                    f.write(line)
-                    f.write('\n')
-def test():
-    sgf = ""
-    with open("/home/cgao/Documents/hex_data/8x8/0000.sgf") as f:
-        sgf = f.read()
-    print(sgf)
-    data = []
-    sgfutil=SgfUtil(boardsize=8, srcDir=None, outputname=None)
-    sgfutil.toStateValues(sgf, data)
-    print(data)
+    fpv=open(srcPositionValue,"r")
+    fout=open(outputname,"w")
+    for line in fpv:
+        line=line.strip()
+        arr=line.split()
+        S=arr[:-1]
+        V=arr[-1]
+        assert(-1-0.001<float(V)<1+0.001)
+        x=" ".join(S).strip()
+        if(x in mydict):
+            fout.write(line+'\n')
+    fpv.close()
+    fout.close()
+    print("Done.")
 
 def process0():
     outfilename="8x8-2.txt"
@@ -411,4 +287,4 @@ if __name__ == "__main__":
     #vpostprocess()
     #process1()
     #positionRemoveDuplicates()
-    vpostprocess()
+    RewardAugment(srcPositionAction="storage/position-action/8x8/data.txt", srcPositionValue="storage/position-value/8x8/data.txt", outputname="rml-data.txt")

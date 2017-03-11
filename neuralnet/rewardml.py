@@ -11,7 +11,7 @@ from utils.positionutil import *
 from six.moves import xrange;
 import os
 
-MODELS_DIR="rmlmodels/"
+MODELS_DIR="models/rmlmodel/"
 SLMODEL_NAME="rmlmodel.ckpt"
 
 
@@ -205,9 +205,9 @@ def main(argv=None):
         slnet.inference(FLAGS.rmlmodel_path)
         return
 
-    slnet=SupervisedRMLNet(srcTrainDataPath="storage/position-value/Train.txt",
-                       srcTestDataPath="storage/position-value/Validate.txt",
-                       srcTestPathFinal="storage/position-value/Test.txt")
+    slnet=SupervisedRMLNet(srcTrainDataPath="storage/rml-data/Train.txt",
+                       srcTestDataPath="storage/rml-data/Validate.txt",
+                       srcTestPathFinal="storage/rml-data/Test.txt")
     slnet.train(FLAGS.nSteps3)
 
 if __name__ == "__main__":

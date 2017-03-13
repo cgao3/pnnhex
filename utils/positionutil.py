@@ -53,6 +53,7 @@ class PositionUtilReward(object):
     def _build_batch_at(self, kth, line):
         arr=line.strip().split()
         reward=float(arr[-1])
+        print("reward: ", reward)
         assert(-1-0.001<reward<1+0.001)
         self.batch_label_rewards[kth]=reward
         (x,y)=self._toIntPair(arr[-2])
@@ -65,7 +66,7 @@ class PositionUtilReward(object):
         # white occupied
         self.batch_positions[kth, 0, 1:INPUT_WIDTH - 1, 1] = 1
         self.batch_positions[kth, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
-        raws = arr[0:-1]
+        raws = arr[0:-2]
         self._set_board(raws)
         turn = HexColor.BLACK
         for raw in raws:

@@ -4,10 +4,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from gtpinterface import GTPInterface
+from play.gtpinterface import GTPInterface
 import os
 import sys
-from agents import NNAgent
+from play.agents import NNAgent
 import argparse
 
 def main(argv=None):

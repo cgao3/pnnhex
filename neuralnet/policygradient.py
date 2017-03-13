@@ -84,11 +84,11 @@ class PGNetwork(object):
         return (games, this_win_count, other_win_count)
 
     def selfplay(self):
-        data_node=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
+        x_data_node=tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         slnet=SupervisedNet(srcTestDataPath=None, srcTrainDataPath=None, srcTestPathFinal=None)
-        #setup architecture here
+        slnet.setup_architecture(nLayers=5)
 
-        this_logits=slnet.model(data_node)
+        this_logits=slnet.model(x_data_node)
         saver=tf.train.Saver(max_to_keep=MAX_NUM_MODEL_TO_KEEP)
         print(this_logits.name)
         sl_model = os.path.join(MODELS_DIR, SLMODEL_NAME)
@@ -96,15 +96,15 @@ class PGNetwork(object):
         saver.restore(sess, sl_model)
 
         with tf.variable_scope("other_nn_player"):
-            slnet2=SLNetwork()
-            slnet2.declare_layers(num_hidden_layer=8)
-            other_logits=slnet2.model(data_node)
+            slnet2=SupervisedNet(srcTestDataPath=None, srcTestPathFinal=None, srcTrainDataPath=None)
+            slnet2.setup_architecture(nLayers=5)
+            other_logits=slnet2.model(x_data_node)
             #use non-scoped name to restore those variables
-            var_dict2 = {slnet.input_layer.weight.op.name: slnet2.input_layer.weight,
-                    slnet.input_layer.bias.op.name: slnet2.input_layer.bias}
-            for i in xrange(slnet2.num_hidden_layer):
-                var_dict2[slnet.conv_layer[i].weight.op.name] = slnet2.conv_layer[i].weight
-                var_dict2[slnet.conv_layer[i].bias.op.name] = slnet2.conv_layer[i].bias
+            var_dict2 = {slnet.inputLayer.weight.op.name: slnet2.inputLayer.weight,
+                    slnet.inputLayer.bias.op.name: slnet2.inputLayer.bias}
+            for i in xrange(slnet2.nLayers):
+                var_dict2[slnet.convLayers[i].weight.op.name] = slnet2.convLayers[i].weight
+                var_dict2[slnet.convLayers[i].bias.op.name] = slnet2.convLayers[i].bias
             saver2 = tf.train.Saver(var_list=var_dict2)
 
             otherSess = tf.Session()

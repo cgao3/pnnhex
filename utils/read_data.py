@@ -432,7 +432,7 @@ class data_util(object):
                     if(k >= self.batchsize):
                         new_offset1 = i
                         new_offset2 = j + 1
-                        break;
+                        break
                 offset2 = 0
                 if(k >= self.batchsize):
                         break

@@ -29,7 +29,7 @@ class SupervisedNet(object):
         self.srcTestPath=srcTestDataPath
         self.srcTestPathFinal=srcTestPathFinal
 
-    def _setup_architecture(self, nLayers):
+    def setup_architecture(self, nLayers):
         self.nLayers=nLayers
         self.inputLayer=Layer("InputLayer", paddingMethod="VALID")
         self.convLayers=[Layer("ConvLayer%d"%i) for i in xrange(nLayers)]
@@ -51,7 +51,7 @@ class SupervisedNet(object):
         self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(num_lines, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
         putil=PositionUtil3(positiondata_filename=srcIn, batch_size=num_lines)
         putil.prepare_batch()
-        self._setup_architecture(nLayers=5)
+        self.setup_architecture(nLayers=5)
         self.xLogits = self.model(self.xInputNode)
         saver = tf.train.Saver()
         with tf.Session() as sess:
@@ -87,7 +87,7 @@ class SupervisedNet(object):
         fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         fake_input.fill(0)
 
-        self._setup_architecture(nLayers=5)
+        self.setup_architecture(nLayers=5)
         batchLogits=self.model(self.batchInputNode)
         batchPrediction=tf.nn.softmax(batchLogits)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(batchLogits, self.batchLabelNode))
@@ -197,9 +197,9 @@ def main(argv=None):
         slnet.inference(FLAGS.slmodel_path)
         return
 
-    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/Train.txt",
-                       srcTestDataPath="storage/position-action/Validate.txt",
-                       srcTestPathFinal="storage/position-action/Test.txt")
+    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/Train.txt",
+                       srcTestDataPath="storage/position-action/8x8/Validate.txt",
+                       srcTestPathFinal="storage/position-action/8x8/Test.txt")
     slnet.train(FLAGS.nSteps)
 
 if __name__ == "__main__":

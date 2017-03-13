@@ -4,13 +4,15 @@ from __future__ import absolute_import
 
 from program import Program
 import sys
-from game_util import *
+from utils.game_util import *
 import argparse
-from unionfind import unionfind
-from agents import WrapperAgent
+from utils.unionfind import unionfind
+from play.agents import WrapperAgent
 
-EXE_NN_AGENT_NAME="./exec_nn_agent.py "
-EXE_HEX_PATH="/home/cgao3/benzene/src/wolve/wolve "
+from utils.read_data import BOARD_SIZE
+
+EXE_NN_AGENT_NAME="/home/cgao3/PycharmProjects/nnhex/play/exec_nn_agent.py "
+EXE_HEX_PATH="/home/cgao3/benzene-vanilla/src/wolve/wolve "
 
 def run_single_match(black_agent, white_agent, verbose=False):
     game=[]
@@ -18,10 +20,10 @@ def run_single_match(black_agent, white_agent, verbose=False):
     white_agent.sendCommand("clear_board")
     black_groups=unionfind()
     white_groups=unionfind()
-    turn=0
-    gamestatus=-1
-    while gamestatus==-1:
-        if turn==0:
+    turn=HexColor.BLACK
+    gamestatus=HexColor.EMPTY
+    while gamestatus==HexColor.EMPTY:
+        if turn==HexColor.BLACK:
             move = black_agent.genmove_black()
             if move == "resign":
                 print("black resign")
@@ -35,13 +37,16 @@ def run_single_match(black_agent, white_agent, verbose=False):
                 print(state_to_str(game))
                 return 0
             black_agent.play_white(move)
-        imove=raw_move_to_int(move)
-        black_groups, white_groups=update_unionfind(imove, turn, game, black_groups, white_groups)
-        gamestatus=winner(black_groups,white_groups)
+        #imove=raw_move_to_int(move)
+        imove=MoveConvertUtil.rawMoveToIntMove(move)
+        black_groups, white_groups = GameCheckUtil.updateUF(game, black_groups, white_groups, imove, turn)
+        #black_groups, white_groups=update_unionfind(imove, turn, game, black_groups, white_groups)
+        #gamestatus=winner(black_groups,white_groups)
+        gamestatus=GameCheckUtil.winner(black_groups,white_groups)
         game.append(imove)
         if verbose:
             print(state_to_str(game))
-        turn=(turn+1)%2
+        turn=HexColor.EMPTY-turn
         sys.stdout.flush()
     print("gamestatus", gamestatus)
     print(state_to_str(game))
@@ -51,12 +56,12 @@ if __name__ == "__main__":
     parser=argparse.ArgumentParser(description="tournament between agents")
     #parser.add_argument("num_games", type=int, help="num of paired games playing")
     parser.add_argument("model_path", help="where the model locates", type=str)
-    parser.add_argument("--wolve_path",default="/home/cgao3/benzene/src/wolve/wolve", help="where is the wolve", type=str)
+    parser.add_argument("--wolve_path",default="/home/cgao3/benzene-vanilla/src/wolve/wolve", help="where is the wolve", type=str)
     parser.add_argument("--value_net", help="whether it is valuenet model", action="store_true", default=False)
     parser.add_argument("--verbose", help="verbose?", action="store_true", default=False)
 
     args=parser.parse_args()
-    num_games=1000
+    num_games=100
     think_time=1
     net_exe=EXE_NN_AGENT_NAME + args.model_path +" 2>/dev/null"
     EXE_HEX_PATH=args.wolve_path
@@ -72,8 +77,8 @@ if __name__ == "__main__":
         wolve.sendCommand("param_wolve max_time "+ repr(think_time))
         wolve.sendCommand("boardsize "+ repr(BOARD_SIZE))
         win=run_single_match(net, wolve, False)
-        if win==0: black_win_count += 1
-        if win==1: white_win_count +=1
+        if win==HexColor.BLACK: black_win_count += 1
+        if win==HexColor.WHITE: white_win_count +=1
         print(i+1, "black: ", black_win_count, "white: ", white_win_count)
     net.sendCommand("close")
     print("black win ", black_win_count, "white win count ", white_win_count)

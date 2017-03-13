@@ -4,10 +4,11 @@ from __future__ import absolute_import
 
 import tensorflow as tf
 import numpy as np
-from game_util import *
-from supervised import SLNetwork
+from utils.game_util import *
+from neuralnet.supervised import SupervisedNet
 import threading
-from program import Program
+from play.program import Program
+from utils.read_data import INPUT_WIDTH, INPUT_DEPTH, BOARD_SIZE
 
 #WrapperAgent can wrap an exe (mohex/wolve) or an exe_nn_agent that implements the GtpInterface
 class WrapperAgent(object):
@@ -59,38 +60,45 @@ class NNAgent(object):
         self.model_path=model_location
         self.agent_name=name
         self.is_value_net=is_value_net
-        self.initialize_game()
+        self.initialize_game([])
 
-    def initialize_game(self):
+    def initialize_game(self, initialRawMoveList):
         self.game_state=[]
+        for rawmove in initialRawMoveList:
+            self.game_state.append(MoveConvertUtil.rawMoveToIntMove(rawmove))
+
         self.boardtensor=np.zeros(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        make_empty_board_tensor(self.boardtensor)
+        RLTensorUtil.makeTensorInBatch(self.boardtensor,0,self.game_state)
         self.load_model()
 
     def load_model(self):
         self.data_node = tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         self.sess=tf.Session()
         if self.is_value_net :
-            from valuenet import ValueNet
-            self.vnet=ValueNet()
-            self.keep_prob_node=tf.placeholder(tf.float32)
-            self.value=self.vnet.model(self.data_node, keep_prob_node=self.keep_prob_node)
+            from neuralnet.valuenet import ValueNet2
+            self.vnet=ValueNet2()
+            self.value=self.vnet.model(self.data_node)
             self.position_values=np.ndarray(dtype=np.float32, shape=(BOARD_SIZE**2,))
         else:
-            self.net = SLNetwork()
-            self.net.declare_layers(num_hidden_layer=5)
+            self.net = SupervisedNet(srcTestDataPath=None,srcTrainDataPath=None, srcTestPathFinal=None)
+            self.net.setup_architecture(nLayers=5)
             self.logit=self.net.model(self.data_node)
         saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)
 
-    def reinitialize(self):
+    def reinitialize(self, moveList=None):
         self.game_state = []
-        make_empty_board_tensor(self.boardtensor)
+        if(moveList):
+            for rawmove in moveList:
+                self.game_state.append(MoveConvertUtil.rawMoveToIntMove(rawmove))
+        self.boardtensor.fill(0)
+        RLTensorUtil.makeTensorInBatch(self.boardtensor,0,self.game_state)
 
     #0-black player, 1-white player
     def play_move(self, intplayer, intmove):
-        update_tensor(self.boardtensor, intplayer, intmove)
         self.game_state.append(intmove)
+        self.boardtensor.fill(0)
+        RLTensorUtil.makeTensorInBatch(batchPositionTensors=self.boardtensor, kth=0, gamestate=self.game_state)
 
     def generate_move(self, intplayer=None):
         if self.is_value_net :
@@ -109,9 +117,9 @@ class NNAgent(object):
             logits=self.sess.run(self.logit, feed_dict={self.data_node:self.boardtensor})
             intmove=softmax_selection(logits, self.game_state)
             #intmove=max_selection(logits, self.game_state)
-            raw_move=intmove_to_raw(intmove)
-            assert(ord('a') <= ord(raw_move[0]) <= ord('z') and 0<= int(raw_move[1:]) <BOARD_SIZE**2)
-            return raw_move
+            rawMove=MoveConvertUtil.intMoveToRaw(intMove=intmove)
+            assert(ord('a') <= ord(rawMove[0]) <= ord('z') and 0<= int(rawMove[1:]) <BOARD_SIZE**2)
+            return rawMove
 
     def close_all(self):
         self.sess.close()

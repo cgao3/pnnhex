@@ -5,7 +5,8 @@ from __future__ import print_function
 import sys
 sys.path.append("..")
 
-from game_util import *
+from utils.game_util import *
+from utils.read_data import BOARD_SIZE
 
 #GtpInterface for Neural Network Agent
 class GTPInterface(object):
@@ -54,10 +55,10 @@ class GTPInterface(object):
     def gtp_play(self, args):
         #play black/white a1
         assert(len(args)==2)
-        intmove=raw_move_to_int(args[1])
+        intmove=MoveConvertUtil.rawMoveToIntMove(args[1])
         assert(0 <= intmove <BOARD_SIZE*BOARD_SIZE)
-        black_player=0
-        white_player=1
+        black_player=HexColor.BLACK
+        white_player=HexColor.WHITE
         if intmove in self.agent.game_state:
             return False, "INVALID! Occupied position."
 
@@ -75,8 +76,8 @@ class GTPInterface(object):
         automatically detect who is to play
         """
         assert (args[0][0] == 'b' or args[0][0] == 'w')
-        black=0
-        white=1
+        black=HexColor.BLACK
+        white=HexColor.WHITE
         if args[0][0]=='b':
             raw_move=self.agent.generate_move(intplayer=black)
         else: raw_move=self.agent.generate_move(intplayer=white)

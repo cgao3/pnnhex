@@ -221,12 +221,22 @@ class SGFPositionValueUtil(object):
                 f.write(repr(res)+'\n')
 
 
-def RewardAugment(srcPositionAction, srcPositionValue, outputname):
+def RewardAugment(srcPositionAction, srcPositionValue, outputname, boardsize=8):
     mydict={}
     print("reward augmenting..")
     with open(srcPositionAction) as fpa:
         for line in fpa:
-            mydict[line.strip()]=True
+            moveseq=line.split()
+            tenaryBoard=[0]*(boardsize*boardsize)
+            turn=HexColor.BLACK
+            for m in moveseq:
+                move=m[2:4]
+                x = ord(move[0].lower()) - ord('a')
+                y = ord(move[1]) - ord('0') - 1
+                tenaryBoard[x * boardsize + y] = turn
+                turn = HexColor.EMPTY - turn
+            code = ''.join(map(str, tenaryBoard))
+            mydict[code]=True
 
     fpv=open(srcPositionValue,"r")
     fout=open(outputname,"w")
@@ -236,8 +246,16 @@ def RewardAugment(srcPositionAction, srcPositionValue, outputname):
         S=arr[:-1]
         V=arr[-1]
         assert(-1-0.001<float(V)<1+0.001)
-        x=" ".join(S).strip()
-        if(x in mydict):
+        tenaryBoard = [0] * (boardsize * boardsize)
+        turn = HexColor.BLACK
+        for m in S:
+            move = m[2:4]
+            x = ord(move[0].lower()) - ord('a')
+            y = ord(move[1]) - ord('0') - 1
+            tenaryBoard[x * boardsize + y] = turn
+            turn = HexColor.EMPTY - turn
+        code = ''.join(map(str, tenaryBoard))
+        if(code in mydict):
             fout.write(line+'\n')
     fpv.close()
     fout.close()

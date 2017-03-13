@@ -2,8 +2,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from read_data import BOARD_SIZE
-from read_data import INPUT_DEPTH, INPUT_WIDTH
+from utils.read_data import BOARD_SIZE, INPUT_DEPTH, INPUT_WIDTH
+from zobrist.zobrist import HexColor
 
 import numpy as np
 
@@ -13,29 +13,32 @@ SOUTH_EDGE=-3
 EAST_EDGE=-2
 WEST_EDGE=-4
 
-def int_to_pair(intmove):
-    x=intmove//BOARD_SIZE
-    y=intmove%BOARD_SIZE
-    return (x,y)
+class MoveConvertUtil:
+    def __init__(self):
+        pass
 
-def pair_to_int(move):
-    x,y=move[0],move[1]
-    return x*BOARD_SIZE+y
+    @staticmethod
+    def intMoveToPair(intMove):
+        x=intMove//BOARD_SIZE
+        y=intMove%BOARD_SIZE
+        return (x,y)
 
-def raw_move_to_int(raw_move):
-    x=ord(raw_move[0].lower())-ord('a')
-    y=int(raw_move[1:])-1
-    return x*BOARD_SIZE+y
+    @staticmethod
+    def intPairToIntMove(pair):
+        x,y=pair
+        return x*BOARD_SIZE+y
 
-def raw_move_to_pair(raw_move):
-    x=ord(raw_move[0].lower())-ord('a')
-    y=int(raw_move[1:])-1
-    return (x,y)
+    @staticmethod
+    def rawMoveToIntMove(rawMove):
+        x = ord(rawMove[0].lower()) - ord('a')
+        y = int(rawMove[1:]) - 1
+        return x * BOARD_SIZE + y
 
-def intmove_to_raw(intmove):
-    x,y=int_to_pair(intmove)
-    y +=1
-    return chr(x+ord('a'))+repr(y)
+    @staticmethod
+    def intMoveToRaw(intMove):
+        x, y = MoveConvertUtil.intMoveToPair(intMove)
+        y += 1
+        return chr(x + ord('a')) + repr(y)
 
 def state_to_str(g):
     size=BOARD_SIZE
@@ -76,88 +79,52 @@ def state_to_str(g):
 def next_player(current_player):
     return (current_player + 1) % 2
 
-def update_tensor(tensor, player, intmove):
-    x, y = intmove // BOARD_SIZE + 1, intmove % BOARD_SIZE + 1
-    tensor[0, x, y, player] = 1
-    tensor[0, x, y, 2] = 0
-    return tensor
+class GameCheckUtil:
+    def __init__(self):
+        pass
 
-def undo_update_tensor(tensor, player, intmove):
-    x, y = intmove // BOARD_SIZE + 1, intmove % BOARD_SIZE + 1
-    tensor[0, x, y, player] = 0 # remove "player" occupied
-    tensor[0, x, y, 2] = 1 # make it empty positions
+    @staticmethod
+    def winner(black_group, white_group):
+        if (black_group.connected(NORTH_EDGE, SOUTH_EDGE)):
+            return HexColor.BLACK
+        elif (white_group.connected(WEST_EDGE, EAST_EDGE)):
+            return HexColor.WHITE
+        else:
+            return HexColor.EMPTY
 
-def make_empty_board_tensor(tensor):
-    tensor.fill(0)
-    # black occupied
-    tensor[0, 0:INPUT_WIDTH, 0, 0] = 1
-    tensor[0, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
-    # white occupied
-    tensor[0, 0, 1:INPUT_WIDTH - 1, 1] = 1
-    tensor[0, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
-    # empty positions
-    tensor[0, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
+    @staticmethod
+    def updateUF(intgamestate, black_group, white_group, intmove, player):
+        assert(player == HexColor.BLACK or player== HexColor.WHITE)
+        x, y = intmove // BOARD_SIZE, intmove % BOARD_SIZE
+        neighbors = []
+        pattern = [(-1, 0), (0, -1), (0, 1), (1, 0), (-1, 1), (1, -1)]
+        for p in pattern:
+            x1, y1 = p[0] + x, p[1] + y
+            if 0 <= x1 < BOARD_SIZE and 0 <= y1 < BOARD_SIZE:
+                neighbors.append((x1, y1))
+        if (player == HexColor.BLACK):
+            if (y == 0):
+                black_group.join(intmove, NORTH_EDGE)
+            if (y == BOARD_SIZE - 1):
+                black_group.join(intmove, SOUTH_EDGE)
 
+            for m in neighbors:
+                m2 = m[0] * BOARD_SIZE + m[1]
+                if (m2 in intgamestate and list(intgamestate).index(m2) % 2 == player-1):
+                    black_group.join(m2, intmove)
+        else:
 
-def make_kth_empty_tensor_in_batch(batch_tensor, kth):
-    batch_tensor[kth].fill(0)
-    # black occupied
-    batch_tensor[kth, 0:INPUT_WIDTH, 0, 0] = 1
-    batch_tensor[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
-    # white occupied
-    batch_tensor[kth, 0, 1:INPUT_WIDTH - 1, 1] = 1
-    batch_tensor[kth, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
-    # empty positions
-    batch_tensor[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
+            if (x == 0):
+                white_group.join(intmove, WEST_EDGE)
+            if (x == BOARD_SIZE - 1):
+                white_group.join(intmove, EAST_EDGE)
 
-def update_kth_tensor_in_batch(batch_tensor, kth, player, intmove):
-    x, y = intmove // BOARD_SIZE + 1, intmove % BOARD_SIZE + 1
-    batch_tensor[kth, x, y, player] = 1
-    batch_tensor[kth, x, y, 2] = 0
-
-#0 for black win, 1-white win, -1 unsettled.
-def winner(black_group, white_group):
-    if (black_group.connected(NORTH_EDGE, SOUTH_EDGE)):
-        return 0
-    elif (white_group.connected(WEST_EDGE, EAST_EDGE)):
-        return 1
-    else:
-        return -1
-
-#player either 0 or 1, 0-black, 1-white
-def update_unionfind(intmove, player, board, black_group, white_group):
-    x, y = intmove // BOARD_SIZE, intmove % BOARD_SIZE
-    neighbors = []
-    pattern = [(-1, 0), (0, -1), (0, 1), (1, 0), (-1, 1), (1, -1)]
-    for p in pattern:
-        x1, y1 = p[0] + x, p[1] + y
-        if 0 <= x1 < BOARD_SIZE and 0 <= y1 < BOARD_SIZE:
-            neighbors.append((x1, y1))
-    if (player == 0):
-
-        if (y == 0):
-            black_group.join(intmove, NORTH_EDGE)
-        if (y == BOARD_SIZE - 1):
-            black_group.join(intmove, SOUTH_EDGE)
-
-        for m in neighbors:
-            m2 = m[0] * BOARD_SIZE + m[1]
-            if (m2 in board and list(board).index(m2) % 2 == player):
-                black_group.join(m2, intmove)
-    else:
-
-        if (x == 0):
-            white_group.join(intmove, WEST_EDGE)
-        if (x == BOARD_SIZE - 1):
-            white_group.join(intmove, EAST_EDGE)
-
-        for m in neighbors:
-            im = m[0] * BOARD_SIZE + m[1]
-            if (im in board and list(board).index(im) % 2 == player):
-                white_group.join(im, intmove)
-    # print(black_group.parent)
-    return (black_group, white_group)
-
+            for m in neighbors:
+                im = m[0] * BOARD_SIZE + m[1]
+                if (im in intgamestate and list(intgamestate).index(im) % 2 == player-1):
+                    white_group.join(im, intmove)
+        # print(black_group.parent)
+        return (black_group, white_group)
 
 # input is raw score such as [-20,30,10]
 def softmax_selection(logits, currentstate, temperature=1.0):
@@ -196,19 +163,75 @@ def max_selection(logits, currentstate):
     del empty_positions, effective_logits
     return ret
 
-class TensorUtil:
+class RLTensorUtil:
     def __init__(self):
         pass
 
     @staticmethod
-    def makeEmptyBoardTensor():
-        pass
+    def makeTensorInBatch(batchPositionTensors, kth, gamestate):
+        #gamestate is an integer array of moves
+
+        batchPositionTensors[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
+        # black occupied
+        batchPositionTensors[kth, 0:INPUT_WIDTH, 0, 0] = 1
+        batchPositionTensors[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
+        # white occupied
+        batchPositionTensors[kth, 0, 1:INPUT_WIDTH - 1, 1] = 1
+        batchPositionTensors[kth, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
+
+        board=np.ndarray(shape=(INPUT_WIDTH, INPUT_WIDTH), dtype=np.int32)
+        RLTensorUtil.set_board(board, gamestate)
+
+        turn = HexColor.BLACK
+        for imove in gamestate:
+            (x, y) = RLTensorUtil.intMoveToPair(imove)
+            x, y = x + 1, y + 1
+            ind = 0 if turn == HexColor.BLACK else 1
+            batchPositionTensors[kth, x, y, ind] = 1
+            batchPositionTensors[kth, x, y, INPUT_DEPTH - 1] = 0
+            turn = HexColor.EMPTY - turn
+
+        ind_bridge_black = 2
+        ind_bridge_white = 3
+        for i in xrange(INPUT_WIDTH - 1):
+            for j in xrange(INPUT_WIDTH - 1):
+                p1 = board[i, j], board[i + 1, j], board[i, j + 1], board[i + 1, j + 1]
+                if p1[0] == HexColor.BLACK and p1[3] == HexColor.BLACK and p1[1] != HexColor.WHITE and p1[
+                    2] != HexColor.WHITE:
+                    batchPositionTensors[kth, i, j, ind_bridge_black] = 1
+                    batchPositionTensors[kth, i + 1, j + 1, ind_bridge_black] = 1
+                if p1[0] == HexColor.WHITE and p1[3] == HexColor.WHITE and p1[1] != HexColor.BLACK and p1[
+                    2] != HexColor.BLACK:
+                    batchPositionTensors[kth, i, j, ind_bridge_white] = 1
+                    batchPositionTensors[kth, i + 1, j + 1, ind_bridge_white] = 1
+                if j - 1 >= 0:
+                    p2 = board[i, j], board[i + 1, j - 1], board[i + 1, j], board[i, j + 1]
+                    if p2[1] == HexColor.BLACK and p2[3] == HexColor.BLACK and p2[0] != HexColor.WHITE and p2[
+                        2] != HexColor.WHITE:
+                        batchPositionTensors[kth, i + 1, j - 1, ind_bridge_black] = 1
+                        batchPositionTensors[kth, i, j + 1, ind_bridge_black] = 1
+                    if p2[1] == HexColor.WHITE and p2[3] == HexColor.WHITE and p2[0] != HexColor.BLACK and p2[
+                        2] != HexColor.BLACK:
+                        batchPositionTensors[kth, i + 1, j - 1, ind_bridge_white] = 1
+                        batchPositionTensors[kth, i, j + 1, ind_bridge_white] = 1
 
     @staticmethod
-    def make_kth_boardtensor_in_batch():
-        pass
-
+    def set_board(board, gamestate):
+        board.fill(0)
+        board[0:INPUT_WIDTH, 0] = HexColor.BLACK
+        board[0:INPUT_WIDTH, INPUT_WIDTH - 1] = HexColor.BLACK
+        board[0, 1:INPUT_WIDTH - 1] = HexColor.WHITE
+        board[INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1] = HexColor.WHITE
+        turn = HexColor.BLACK
+        for imove in gamestate:
+            (x, y) = RLTensorUtil.intMoveToPair(imove)
+            x, y = x + 1, y + 1
+            board[x, y] = turn
+            turn = HexColor.EMPTY - turn
 
     @staticmethod
-    def UpdateOneMoveToTensor():
-        pass
+    def intMoveToPair(imove):
+        x=imove//BOARD_SIZE
+        y=imove%BOARD_SIZE
+        return (x,y)
+

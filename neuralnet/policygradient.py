@@ -48,28 +48,30 @@ class PGNetwork(object):
         this_win_count=0
         other_win_count=0
 
-        this_player=random.randint(0,1)
-        other_player=1-this_player
+        this_player=random.randint(1,2)
         games=[]
         for ind in range(batch_game_size):
             self.board_tensor.fill(0)
-            make_empty_board_tensor(self.board_tensor)
-            currentplayer = 0
-            gamestatus = -1
+            RLTensorUtil.makeTensorInBatch(self.board_tensor,0,[])
+            currentplayer = HexColor.BLACK
+            gamestatus = HexColor.EMPTY
             black_group = unionfind()
             white_group = unionfind()
             count = 0
             moves=[]
-            while (gamestatus == -1):
+            while (gamestatus == HexColor.EMPTY):
                 if (currentplayer == this_player):
                     logit = sess.run(thisLogit, feed_dict={data_node: self.board_tensor})
                 else:
                     logit = otherSess.run(otherLogit, feed_dict={data_node: self.board_tensor})
                 action = softmax_selection(logit, moves)
-                update_tensor(self.board_tensor, currentplayer, action)
-                black_group, white_group = update_unionfind(action, currentplayer, moves, black_group, white_group)
-                currentplayer = other_player if currentplayer == this_player else this_player
-                gamestatus = winner(black_group, white_group)
+                RLTensorUtil.makeTensorInBatch(self.board_tensor, 0, moves)
+                #update_tensor(self.board_tensor, currentplayer, action)
+                #black_group, white_group = update_unionfind(action, currentplayer, moves, black_group, white_group)
+                black_group, white_group = GameCheckUtil.updateUF(moves,black_group,white_group, action, currentplayer)
+                currentplayer = HexColor.EMPTY - currentplayer
+                #gamestatus = winner(black_group, white_group)
+                gamestatus=GameCheckUtil.winner(black_group,white_group)
                 moves.append(action)
                 count += 1
                 #print(count, "action ", action)
@@ -199,28 +201,32 @@ class PGNetwork(object):
     def test_play(self, batch_game_size=128):
         data = tf.placeholder(tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         otherSess = tf.Session()
-        otherLogit = self.model(data)
+        net=SupervisedNet(srcTestPathFinal=None, srcTrainDataPath=None, srcTestDataPath=None)
+        net.setup_architecture(nLayers=5)
+        otherLogits=net.model(data)
         saver = tf.train.Saver()
-        saver.restore(otherSess, os.path.join(MODELS_DIR, SLMODEL_NAME))
+        model_path_other="models/slmodel.ckpt-120000"
+        saver.restore(otherSess, model_path_other)
 
         tf.get_variable_scope().reuse_variables()
         sess = tf.Session()
-        thisLogit = self.model(data)
-        saver.restore(sess, os.path.join(MODELS_DIR, SLMODEL_NAME))
+        thisLogits = net.model(data)
+        model_path_this="models/slmodel.ckpt-120000"
+        saver.restore(sess, model_path_this)
 
         game_rewards = np.ndarray(shape=(batch_game_size,), dtype=np.float32)
         this_win=0
         other_win=0
         for _ in range(3):
-            _, this, that=self.play_one_batch_games(sess, otherSess, thisLogit, otherLogit, data, batch_game_size, game_rewards)
+            _, this, that=self.play_one_batch_games(sess, otherSess, thisLogits, otherLogits, data, batch_game_size, game_rewards)
             this_win  += this
             other_win +=that
 
-        print("This player wins ", this_win, "that player wins", other_win)
+        print("Total: This player wins ", this_win, "that player wins", other_win)
 
 def main(argv=None):
     pg=PGNetwork()
-    pg.selfplay()
+    pg.test_play(batch_game_size=1000)
 
 if __name__ == "__main__":
     tf.app.run()

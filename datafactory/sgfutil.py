@@ -9,7 +9,7 @@ import argparse
 
 class SGFPositionActionUtil:
 
-    pattern=r';[B|W]\[[a-zA-Z][1-9]+\]'
+    pattern=r';[B|W]\[[a-zA-Z][0-9]+\]'
     def __init__(self, srcdir, outfilename, offset=1):
         self.srcdir=srcdir
         self.outfilename=outfilename
@@ -48,19 +48,28 @@ class SGFPositionActionUtil:
 
     @staticmethod
     def removeDuplicates(boardsize, infilename):
+        print("position-action remove duplicates...")
         tt = {}
-        hashUtil = ZobristHash(boardsize=boardsize)
+        #hashUtil = ZobristHash(boardsize=boardsize)
+        tenaryBoard=np.ndarray(shape=(boardsize*boardsize), dtype=np.int16)
         with open(infilename) as f:
             for line in f:
                 line = line.strip()
                 movesquence = line.split()
-                intmoveseq = []
+                #intmoveseq = []
+                tenaryBoard.fill(0)
+                turn=HexColor.BLACK
                 for m in movesquence:
-                    move = m[2:4]
+                    m=m.strip()
+                    move = m[2:-1]
                     x = ord(move[0].lower()) - ord('a')
-                    y = ord(move[1]) - ord('0') - 1
-                    intmoveseq.append(x * boardsize + y)
-                code = hashUtil.get_hash(intmoveseq)
+                    y = int(move[1:]) - 1
+                    #intmoveseq.append(x * boardsize + y)
+                    tenaryBoard[x*boardsize+y]=turn
+                    turn=HexColor.EMPTY-turn
+
+                #code = hashUtil.get_hash(intmoveseq)
+                code = ''.join(map(str, tenaryBoard))
                 tt[code] = line
 
         outfile = infilename + "_no_duplicates"
@@ -72,52 +81,8 @@ class SGFPositionActionUtil:
                 f.write(line)
                 f.write('\n')
 
-    @staticmethod
-    def removeDataAppearsInMain(boardsize, filenameMain, filenameTest):
-        ttTest = {}
-        hashUtil = ZobristHash(boardsize=boardsize)
-        with open(filenameTest) as f:
-            for line in f:
-                line = line.strip()
-                movesquence = line.split()
-                intmoveseq = []
-                for m in movesquence:
-                    move = m[2:4]
-                    x = ord(move[0].lower()) - ord('a')
-                    y = ord(move[1]) - ord('0') - 1
-                    intmoveseq.append(x * boardsize + y)
-                code = hashUtil.get_hash(intmoveseq)
-                ttTest[code] = line
-
-        count=0
-        count2=0
-        out=open(filenameMain+"_2", "w")
-        with open(filenameMain) as f:
-            for line in f:
-                line = line.strip()
-                movesquence = line.split()
-                intmoveseq = []
-                for m in movesquence:
-                    move = m[2:4]
-                    x = ord(move[0].lower()) - ord('a')
-                    y = ord(move[1]) - ord('0') - 1
-                    intmoveseq.append(x * boardsize + y)
-                code = hashUtil.get_hash(intmoveseq)
-                if not code in ttTest:
-                    out.write(line)
-                    out.write('\n')
-                    count2 +=1
-                count +=1
-        out.close()
-        print("unique position size in test:", len(ttTest), "pre-size", count, "now size: ", count2)
-        with open(filenameTest+"_2","w") as f:
-            for line in ttTest.values():
-                f.write(line)
-                f.write('\n')
-
-
 class SGFPositionValueUtil(object):
-    pattern=r';[B|W]\[[a-zA-Z][1-9]+\]'
+    pattern=r';[B|W]\[[a-zA-Z][0-9]+\]'
     winnerPattern=r'RE\[[B|W]\+\]'
 
     def __init__(self, srcdir, outfilename, offset=1):
@@ -129,6 +94,9 @@ class SGFPositionValueUtil(object):
     def toPositions(self, strSGF, ret):
         game=re.findall(self.pattern, strSGF)
         x=""
+        if(game[0][1]!='B'):
+            print("not starting from B?")
+            exit(0)
         for i, rawMove in enumerate(game):
             x +=rawMove[1:]+" "
             if i < self.offset-1:
@@ -143,11 +111,11 @@ class SGFPositionValueUtil(object):
         resultStr=resultStr[0]
         winner=HexColor.BLACK if resultStr[3]=='B' else HexColor.WHITE
         for i, posi in enumerate(positionValuesList):
-            #print(state, len(state)%2)
+
             if((len(posi.split())%2) + 1==winner):
-                posi = posi + " " + "1"
+                posi = posi + " " + "1.0"
             else:
-                posi = posi + " " + "0"
+                posi = posi + " " + "-1.0"
             positionValuesList[i]=posi
 
         return positionValuesList
@@ -177,36 +145,40 @@ class SGFPositionValueUtil(object):
     def postprocess(boardsize, positionValuesFileName):
         print("position-value postprocessing")
         tt={}
+        tenaryBoard=np.ndarray(shape=(boardsize*boardsize), dtype=np.int16)
         with open(positionValuesFileName) as f:
             for line in f:
                 line=line.strip()
                 movesquence=line.split()
-                value = int(movesquence[-1])
+                value = float(movesquence[-1])
                 movesquence=movesquence[:-1]
-                assert(value==0 or value==1)
-                tenaryBoard=[0]*(boardsize*boardsize)
+                assert(value<-0.99 or value>0.99)
+                tenaryBoard.fill(0)
                 turn=HexColor.BLACK
                 for m in movesquence:
-                    move=m[2:4]
+                    m=m.strip()
+                    move=m[2:-1]
                     x=ord(move[0].lower())-ord('a')
-                    y=ord(move[1])-ord('0')-1
+                    y=int(move[1:])-1
+                    assert(0<=y<boardsize)
                     tenaryBoard[x*boardsize+y]=turn
                     turn = HexColor.EMPTY - turn
                 code=''.join(map(str,tenaryBoard))
                 if code in tt:
-                    mq, one_count, zero_count=tt[code]
-                    if value==1:
+                    mq, one_count, neg_one_count=tt[code]
+                    if value>0.99:
                         one_count +=1
                     else:
-                        zero_count +=1
-                    tt[code]=(mq, one_count, zero_count)
+                        neg_one_count +=1
+                    tt[code]=(mq, one_count, neg_one_count)
                 else:
                     one_count=0
-                    zero_count=0
-                    if value==1:
-                        one_count=1
-                    else: zero_count=1
-                    tt[code]=(movesquence, one_count, zero_count)
+                    neg_one_count=0
+                    if value > 0.99:
+                        one_count = 1
+                    else:
+                        neg_one_count = 1
+                    tt[code]=(movesquence, one_count, neg_one_count)
 
         outfile=positionValuesFileName+"-post"
         print("size: ", len(tt))
@@ -214,50 +186,80 @@ class SGFPositionValueUtil(object):
         with open(outfile, "w") as f:
             for line in tt.values():
                 #print(line)
-                mq, one_count, zero_count = line
+                mq, one_count, neg_one_count = line
                 for m in mq:
                     f.write(m+' ')
-                res=(one_count)*1.0/(one_count+zero_count)
+                res=(one_count - neg_one_count )*1.0/(one_count+neg_one_count)
                 f.write(repr(res)+'\n')
 
 
 def RewardAugment(srcPositionAction, srcPositionValue, outputname, boardsize=8):
-    mydict={}
-    print("reward augmenting..")
-    with open(srcPositionAction) as fpa:
-        for line in fpa:
-            moveseq=line.split()
-            tenaryBoard=[0]*(boardsize*boardsize)
-            turn=HexColor.BLACK
-            for m in moveseq:
-                move=m[2:4]
-                x = ord(move[0].lower()) - ord('a')
-                y = ord(move[1]) - ord('0') - 1
-                tenaryBoard[x * boardsize + y] = turn
-                turn = HexColor.EMPTY - turn
-            code = ''.join(map(str, tenaryBoard))
-            mydict[code]=True
 
-    fpv=open(srcPositionValue,"r")
+    print("reward augmenting..")
+    tenaryBoard=np.ndarray(shape=(boardsize*boardsize), dtype=np.int16)
+    valueDict={}
+    pvfile=open(srcPositionValue,"r")
     fout=open(outputname,"w")
-    for line in fpv:
+    nextMoveMarker="NextMove: "
+    for line in pvfile:
         line=line.strip()
         arr=line.split()
         S=arr[:-1]
         V=arr[-1]
         assert(-1-0.001<float(V)<1+0.001)
-        tenaryBoard = [0] * (boardsize * boardsize)
+        tenaryBoard.fill(0)
         turn = HexColor.BLACK
         for m in S:
-            move = m[2:4]
+            m=m.strip()
+            move = m[2:-1]
             x = ord(move[0].lower()) - ord('a')
-            y = ord(move[1]) - ord('0') - 1
+            y = int(move[1:]) - 1
             tenaryBoard[x * boardsize + y] = turn
             turn = HexColor.EMPTY - turn
+
         code = ''.join(map(str, tenaryBoard))
-        if(code in mydict):
-            fout.write(line+'\n')
-    fpv.close()
+        valueDict[code]=float(V)
+    pvfile.close()
+
+    posiDict = {}
+    pdict2={}
+    with open(srcPositionAction) as pafile:
+        for line in pafile:
+            moveseq=line.split()
+            tenaryBoard.fill(0)
+            turn=HexColor.BLACK
+            action=moveseq[-1]
+            moveseq=moveseq[:-1]
+            for m in moveseq:
+                m=m.strip()
+                move=m[2:-1]
+                x = ord(move[0].lower()) - ord('a')
+                y = int(move[1:]) - 1
+                tenaryBoard[x * boardsize + y] = turn
+                turn = HexColor.EMPTY - turn
+            code = ''.join(map(str, tenaryBoard))
+            move=action.strip()[2:-1]
+            x=ord(move[0].lower())-ord('a')
+            y=int(move[1:]) - 1
+            tenaryBoard[x*boardsize+y]=turn
+            codeAfterstate=''.join(map(str,tenaryBoard))
+            value=valueDict[codeAfterstate]
+            pdict2[code]=moveseq
+            if code in posiDict:
+                posiDict[code].append((action,value))
+            else:
+                posiDict[code]=[(action,value)]
+
+    for keyItem in posiDict:
+        pass
+        moveseq=pdict2[keyItem]
+        for j in moveseq:
+            fout.write(j + ' ')
+        fout.write(nextMoveMarker)
+        for move,value in posiDict[keyItem]:
+            fout.write(move+' '+repr(value)+ ' ')
+        fout.write('\n')
+
     fout.close()
     print("Done.")
 
@@ -266,11 +268,6 @@ def process0():
     putil=SGFPositionActionUtil(srcdir="/home/cgao3/Documents/hex_data/8x8-2stones-open", outfilename=outfilename, offset=2)
     putil.doConvertInDir()
     #putil.removeDuplicates(boardsize=8, infilename=outfilename)
-
-def positionPostprocess():
-    dataMain="8x8main.txt"
-    dataPart="part.txt"
-    SGFPositionActionUtil.removeDataAppearsInMain(boardsize=8, filenameMain=dataMain, filenameTest=dataPart)
 
 def positionRemoveDuplicates():
     dataMain="pa.txt"
@@ -300,9 +297,22 @@ def vprocessa4():
 def vpostprocess():
     SGFPositionValueUtil.postprocess(boardsize=8, positionValuesFileName="8x8-v-main.txt")
 
+def posi13Process():
+    #putil=SGFPositionActionUtil(srcdir="datafactory/mohexData13x13", outfilename="13x13-pa.txt")
+    #putil.doConvertInDir()
+    infile="13x13-pa.txt"
+    SGFPositionActionUtil.removeDuplicates(boardsize=13, infilename=infile)
+def v13Process():
+    #vutil=SGFPositionValueUtil(srcdir="datafactory/mohexData13x13/", outfilename="value-13x13.txt")
+    #vutil.doConvertInDir()
+    SGFPositionValueUtil.postprocess(boardsize=13,positionValuesFileName="value-13x13.txt")
 if __name__ == "__main__":
     #process0()
     #vpostprocess()
     #process1()
     #positionRemoveDuplicates()
-    RewardAugment(srcPositionAction="storage/position-action/8x8/data.txt", srcPositionValue="storage/position-value/8x8/data.txt", outputname="rml-data.txt")
+    RewardAugment(srcPositionAction="storage/position-action/13x13/data.txt",
+                  srcPositionValue="storage/position-value/13x13/data.txt", outputname="rml-data.txt", boardsize=13)
+    #posi13Process()
+    #v13Process()
+

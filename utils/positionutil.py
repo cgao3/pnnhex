@@ -6,7 +6,7 @@ from __future__ import division
 from six.moves import xrange
 
 import numpy as np
-
+import re
 from zobrist.zobrist import *
 
 BOARD_SIZE = 8
@@ -25,8 +25,6 @@ class PositionUtilReward(object):
         self.reader=open(self.data_file_name, "r")
         self.batch_positions=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint32)
         self.batch_labels=np.ndarray(shape=(batch_size,), dtype=np.uint16)
-        self.batch_label_rewards=np.ndarray(shape=(batch_size,), dtype=np.float32)
-
         self.currentLine=0
 
         self._board=np.ndarray(dtype=np.int32, shape=(INPUT_WIDTH, INPUT_WIDTH))
@@ -51,14 +49,49 @@ class PositionUtilReward(object):
         return nextEpoch
 
     def _build_batch_at(self, kth, line):
-        arr=line.strip().split()
-        reward=float(arr[-1])
+        nextMoveStartIndex=line.find("NextMove:")
+        arr=line[:nextMoveStartIndex].strip().split()
+        moveRewardStr=line[nextMoveStartIndex+len("NextMove:"):]
+        #print(moveRewardStr)
+        patternMoveReward=r'[B|W]\[[a-zA-Z][0-9]+\] -?[0|1]\.[0-9]+'
+        RewardUnseenMove=-20.0
+        tau=0.5
 
-        assert(-1-0.001<reward<1+0.001)
-        self.batch_label_rewards[kth]=reward
-        (x,y)=self._toIntPair(arr[-2])
-        self.batch_labels[kth]=x*BOARD_SIZE+y
+        result=re.findall(patternMoveReward, moveRewardStr)
+        #assert(result)
+        moveRewardLists=[]
+        for ele in result:
+            tmpArray=ele.strip().split()
+            (x,y)=self._toIntPair(tmpArray[0])
+            reward=float(tmpArray[1])
+            moveRewardLists.append((x*BOARD_SIZE+y, reward))
+            assert(-1-0.001<reward<1+0.001)
 
+        raws = arr[0:]
+
+        #self.batch_label_rewards[kth]=1
+        EmptyCells=[i for i in range(BOARD_SIZE**2)]
+        for rawMove in raws:
+            (x,y)=self._toIntPair(rawMove)
+            EmptyCells.remove(x*BOARD_SIZE+y)
+        for i,j in moveRewardLists:
+            EmptyCells.remove(i)
+
+        for cell in EmptyCells:
+            moveRewardLists.append((cell,RewardUnseenMove))
+
+        p=np.ndarray(shape=(len(moveRewardLists),), dtype=np.float32)
+        a=np.ndarray(shape=(len(moveRewardLists),), dtype=np.float32)
+        k=0
+        for i,j in moveRewardLists:
+            a[k]=i
+            p[k]=np.exp(j/tau)
+            k += 1
+        p=p/np.sum(p)
+        label=np.random.choice(a, 1, False, p)
+
+        self.batch_labels[kth]=label
+        #print("sampled label:", label, (chr(ord('a')+label//BOARD_SIZE), label%BOARD_SIZE+1))
         self.batch_positions[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
         # black occupied
         self.batch_positions[kth, 0:INPUT_WIDTH, 0, 0] = 1
@@ -66,7 +99,6 @@ class PositionUtilReward(object):
         # white occupied
         self.batch_positions[kth, 0, 1:INPUT_WIDTH - 1, 1] = 1
         self.batch_positions[kth, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
-        raws = arr[0:-2]
         self._set_board(raws)
         turn = HexColor.BLACK
         for raw in raws:

@@ -84,7 +84,6 @@ class SupervisedRMLNet(object):
         tau=0.95
         self.batchInputNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),name="BatchTrainInputNode")
         self.batchLabelNode = tf.placeholder(dtype=tf.int32, shape=(BATCH_SIZE,), name="BatchTrainLabelNode")
-        self.batchLabelRewardNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE,), name="BatchTrainLabelRewardNode")
 
         self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
         fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
@@ -95,7 +94,7 @@ class SupervisedRMLNet(object):
         batchPrediction=tf.nn.softmax(batchLogits)
         sum_loss=0.0
         for i in range(BATCH_SIZE):
-            sum_loss =sum_loss - tf.mul(tf.log(batchPrediction[i][self.batchLabelNode[i]]),tf.exp(self.batchLabelRewardNode[i]/tau))
+            sum_loss =sum_loss - tf.log(batchPrediction[i][self.batchLabelNode[i]])
 
         loss=sum_loss/BATCH_SIZE
         opt=tf.train.AdamOptimizer().minimize(loss)
@@ -130,8 +129,7 @@ class SupervisedRMLNet(object):
                 if nextEpoch: epoch_num += 1
                 inputs=trainDataUtil.batch_positions.astype(np.float32)
                 labels=trainDataUtil.batch_labels.astype(np.uint16)
-                labelRewards=trainDataUtil.batch_label_rewards.astype(np.float32)
-                feed_dictionary={self.batchInputNode:inputs, self.batchLabelNode:labels, self.batchLabelRewardNode:labelRewards}
+                feed_dictionary={self.batchInputNode:inputs, self.batchLabelNode:labels}
                 _, run_loss=sess.run([opt, loss], feed_dict=feed_dictionary)
 
                 if step % print_frequency:
@@ -205,9 +203,9 @@ def main(argv=None):
         slnet.inference(FLAGS.rmlmodel_path)
         return
 
-    slnet=SupervisedRMLNet(srcTrainDataPath="storage/rml-data/Train.txt",
-                       srcTestDataPath="storage/rml-data/Validate.txt",
-                       srcTestPathFinal="storage/rml-data/Test.txt")
+    slnet=SupervisedRMLNet(srcTrainDataPath="storage/rml-data/8x8/Train.txt",
+                       srcTestDataPath="storage/rml-data/8x8/Validate.txt",
+                       srcTestPathFinal="storage/rml-data/8x8/Test.txt")
     slnet.train(FLAGS.nSteps3)
 
 if __name__ == "__main__":

@@ -150,7 +150,7 @@ class PGNetwork(object):
 
         while ite < FLAGS.max_iterations:
             start_batch_time = time.time()
-            games,_tmp1,_tmp2=self.play_one_batch_games(sess,otherSess, this_logits,other_logits,data_node,batch_game_size, game_rewards)
+            games,_tmp1,_tmp2=self.play_one_batch_games(sess,otherSess, this_logits,other_logits,x_data_node,batch_game_size, game_rewards)
             win1 += _tmp1
             win2 += _tmp2
             data_tool=data_util(games, PG_STATE_BATCH_SIZE, batch_data, batch_labels)
@@ -217,12 +217,12 @@ class PGNetwork(object):
         game_rewards = np.ndarray(shape=(batch_game_size,), dtype=np.float32)
         this_win=0
         other_win=0
-        for _ in range(3):
+        for _ in range(10):
             _, this, that=self.play_one_batch_games(sess, otherSess, thisLogits, otherLogits, data, batch_game_size, game_rewards)
             this_win  += this
             other_win +=that
 
-        print("Total: This player wins ", this_win, "that player wins", other_win)
+        print("Total: ML wins ", this_win, "ML wins", other_win)
 
 def main(argv=None):
     pg=PGNetwork()

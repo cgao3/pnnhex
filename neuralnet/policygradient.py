@@ -211,18 +211,18 @@ class PGNetwork(object):
         tf.get_variable_scope().reuse_variables()
         sess = tf.Session()
         thisLogits = net.model(data)
-        model_path_this="models/slmodel.ckpt-120000"
+        model_path_this="models/rmlmodel/rmlmodel.ckpt-120000"
         saver.restore(sess, model_path_this)
 
         game_rewards = np.ndarray(shape=(batch_game_size,), dtype=np.float32)
         this_win=0
         other_win=0
-        for _ in range(10):
+        for _ in range(5):
             _, this, that=self.play_one_batch_games(sess, otherSess, thisLogits, otherLogits, data, batch_game_size, game_rewards)
             this_win  += this
             other_win +=that
-
-        print("Total: ML wins ", this_win, "ML wins", other_win)
+        print("this:", model_path_this, "other:", model_path_other)
+        print("Total: this wins ", this_win, "other wins", other_win)
 
 def main(argv=None):
     pg=PGNetwork()

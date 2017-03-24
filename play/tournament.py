@@ -12,7 +12,7 @@ from play.agents import WrapperAgent
 from utils.read_data import BOARD_SIZE
 
 EXE_NN_AGENT_NAME="/home/cgao3/PycharmProjects/nnhex/play/exec_nn_agent.py "
-EXE_HEX_PATH="/home/cgao3/benzene-vanilla/src/wolve/wolve "
+EXE_HEX_PATH="/home/cgao3/benzene-vanilla/src/mohex/mohex "
 
 def run_single_match(black_agent, white_agent, verbose=False):
     game=[]
@@ -61,22 +61,27 @@ if __name__ == "__main__":
     parser.add_argument("--verbose", help="verbose?", action="store_true", default=False)
 
     args=parser.parse_args()
-    num_games=100
+    num_games=5000
     think_time=1
     net_exe=EXE_NN_AGENT_NAME + args.model_path +" 2>/dev/null"
-    EXE_HEX_PATH=args.wolve_path
-    wolve_exe=EXE_HEX_PATH+" 2>/dev/null"
-    wolve=WrapperAgent(wolve_exe, True)
+    #EXE_HEX_PATH=args.wolve_path
+    bot_exe=EXE_HEX_PATH+" 2>/dev/null"
+    bot=WrapperAgent(bot_exe, True)
     net=WrapperAgent(net_exe, True)
-
-    wolve.sendCommand("param_wolve max_time "+repr(think_time))
+    if EXE_HEX_PATH == args.wolve_path:
+        bot.sendCommand("param_wolve max_time "+repr(think_time))
+    else:
+        bot.sendCommand("param_mohex max_time " + repr(think_time))
     white_win_count=0
     black_win_count=0
     for i in range(num_games):
-        wolve.reconnect()
-        wolve.sendCommand("param_wolve max_time "+ repr(think_time))
-        wolve.sendCommand("boardsize "+ repr(BOARD_SIZE))
-        win=run_single_match(net, wolve, False)
+        bot.reconnect()
+        if EXE_HEX_PATH == args.wolve_path:
+            bot.sendCommand("param_wolve max_time " + repr(think_time))
+        else:
+            bot.sendCommand("param_mohex max_time " + repr(think_time))
+        bot.sendCommand("boardsize "+ repr(BOARD_SIZE))
+        win=run_single_match(net, bot, False)
         if win==HexColor.BLACK: black_win_count += 1
         if win==HexColor.WHITE: white_win_count +=1
         print(i+1, "black: ", black_win_count, "white: ", white_win_count)

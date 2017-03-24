@@ -19,16 +19,18 @@ EVAL_BATCH_SIZE=440
 #5 channels:
 # black stone chanes, white stone channels, black bridge, white bridge, empty position channels
 class PositionUtilReward(object):
-    def __init__(self, positiondata_filename, batch_size):
+    def __init__(self, positiondata_filename, batch_size, forTest=False):
         self.data_file_name=positiondata_filename
         self.batch_size=batch_size
         self.reader=open(self.data_file_name, "r")
         self.batch_positions=np.ndarray(shape=(batch_size, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), dtype=np.uint32)
         self.batch_labels=np.ndarray(shape=(batch_size,), dtype=np.uint16)
         self.currentLine=0
-
         self._board=np.ndarray(dtype=np.int32, shape=(INPUT_WIDTH, INPUT_WIDTH))
 
+        self.forTest = forTest
+        if forTest:
+            self.batch_labelSet=np.ndarray(shape=(batch_size, ), dtype=object)
     def close_file(self):
         self.reader.close()
 
@@ -56,7 +58,6 @@ class PositionUtilReward(object):
         patternMoveReward=r'[B|W]\[[a-zA-Z][0-9]+\] -?[0|1]\.[0-9]+'
         RewardUnseenMove=-20.0
         tau=0.5
-
         result=re.findall(patternMoveReward, moveRewardStr)
         #assert(result)
         moveRewardLists=[]
@@ -66,6 +67,9 @@ class PositionUtilReward(object):
             reward=float(tmpArray[1])
             moveRewardLists.append((x*BOARD_SIZE+y, reward))
             assert(-1-0.001<reward<1+0.001)
+
+        if self.forTest:
+            self.batch_labelSet[kth]=[i for i,j in moveRewardLists]
 
         raws = arr[0:]
 
@@ -89,9 +93,10 @@ class PositionUtilReward(object):
             k += 1
         p=p/np.sum(p)
         label=np.random.choice(a, 1, False, p)
-
         self.batch_labels[kth]=label
         #print("sampled label:", label, (chr(ord('a')+label//BOARD_SIZE), label%BOARD_SIZE+1))
+
+
         self.batch_positions[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
         # black occupied
         self.batch_positions[kth, 0:INPUT_WIDTH, 0, 0] = 1

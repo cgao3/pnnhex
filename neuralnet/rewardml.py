@@ -134,7 +134,7 @@ class SupervisedRMLNet(object):
                 step += 1
             print("saving computation graph for c++ inference")
             tf.train.write_graph(sess.graph_def, rml_model_dir, "graph.pbtxt")
-            tf.train.write_graph(sess.graph_def, rml_model_dir, "graph.pb", as_text=False)
+            tf.train.write_graph(sess.graph_de, rml_model_dir, "graph.pb", as_text=False)
 
             print("best Error is:", bestError, "best train step:", bestTrainStep)
             testDataUtil.close_file()
@@ -188,7 +188,7 @@ def main(argv=None):
         return
 
     slnet=SupervisedRMLNet(srcTrainDataPath="storage/rml-data/8x8/Train.txt",
-                       srcTestDataPath="storage/rml-data/8x8/Validate.txt",
+                       srcTestDataPath="storage/rml-data/8x8/Test.txt",
                        srcTestPathFinal="storage/rml-data/8x8/Test.txt")
     slnet.train(FLAGS.nSteps3)
 

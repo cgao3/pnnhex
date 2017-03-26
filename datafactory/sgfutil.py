@@ -64,6 +64,8 @@ class SGFPositionActionUtil:
                     move = m[2:-1]
                     x = ord(move[0].lower()) - ord('a')
                     y = int(move[1:]) - 1
+                    assert (0 <= x < boardsize)
+                    assert (0 <= y < boardsize)
                     #intmoveseq.append(x * boardsize + y)
                     tenaryBoard[x*boardsize+y]=turn
                     turn=HexColor.EMPTY-turn
@@ -152,7 +154,8 @@ class SGFPositionValueUtil(object):
                 movesquence=line.split()
                 value = float(movesquence[-1])
                 movesquence=movesquence[:-1]
-                assert(value<-0.99 or value>0.99)
+
+                #assert(value<-0.99 or value>0.99)
                 tenaryBoard.fill(0)
                 turn=HexColor.BLACK
                 for m in movesquence:
@@ -160,6 +163,8 @@ class SGFPositionValueUtil(object):
                     move=m[2:-1]
                     x=ord(move[0].lower())-ord('a')
                     y=int(move[1:])-1
+
+                    assert(0<=x<boardsize)
                     assert(0<=y<boardsize)
                     tenaryBoard[x*boardsize+y]=turn
                     turn = HexColor.EMPTY - turn
@@ -270,23 +275,23 @@ def process0():
     #putil.removeDuplicates(boardsize=8, infilename=outfilename)
 
 def positionRemoveDuplicates():
-    dataMain="pa.txt"
+    dataMain="new8x8total.txt"
     SGFPositionActionUtil.removeDuplicates(boardsize=8, infilename=dataMain)
 
 def process1():
-    outfilename = "8x8-a4.txt"
-    putil = SGFPositionActionUtil(srcdir="/home/cgao3/Documents/hex_data/a4", outfilename=outfilename,
-                                  offset=1)
+    outfilename = "8x8-noah.txt"
+    putil = SGFPositionActionUtil(srcdir="/tmp/games8x8/games2/", outfilename=outfilename,
+                                  offset=2)
     putil.doConvertInDir()
 
 def vprocess1():
     outfilename="8x8-v1.txt"
-    vutil=SGFPositionValueUtil(srcdir="/home/cgao3/Documents/hex_data/8x8", outfilename=outfilename, offset=1)
+    vutil=SGFPositionValueUtil(srcdir="/tmp/games8x8/games2/", outfilename=outfilename, offset=1)
     vutil.doConvertInDir()
 
 def vprocess2():
-    outfilename="8x8-v2.txt"
-    vutil=SGFPositionValueUtil(srcdir="/home/cgao3/Documents/hex_data/8x8-2stones-open", outfilename=outfilename, offset=2)
+    outfilename="value-8x8.txt"
+    vutil=SGFPositionValueUtil(srcdir="/home/cgao3/Documents/hex_data/8x8-games1", outfilename=outfilename, offset=1)
     vutil.doConvertInDir()
 def vprocessa4():
     outfile="8x8-v-a4.txt"
@@ -295,24 +300,24 @@ def vprocessa4():
     vutil.doConvertInDir()
 
 def vpostprocess():
-    SGFPositionValueUtil.postprocess(boardsize=8, positionValuesFileName="8x8-v-main.txt")
+    SGFPositionValueUtil.postprocess(boardsize=8, positionValuesFileName="newtotalvalue.txt")
 
 def posi13Process():
     #putil=SGFPositionActionUtil(srcdir="datafactory/mohexData13x13", outfilename="13x13-pa.txt")
     #putil.doConvertInDir()
-    infile="13x13-pa.txt"
+    infile="13x13pa-withlg.txt"
     SGFPositionActionUtil.removeDuplicates(boardsize=13, infilename=infile)
 def v13Process():
     #vutil=SGFPositionValueUtil(srcdir="datafactory/mohexData13x13/", outfilename="value-13x13.txt")
     #vutil.doConvertInDir()
-    SGFPositionValueUtil.postprocess(boardsize=13,positionValuesFileName="value-13x13.txt")
+    SGFPositionValueUtil.postprocess(boardsize=13,positionValuesFileName="13x13pv-withlg.txt")
 if __name__ == "__main__":
     #process0()
     #vpostprocess()
-    #process1()
+    #vprocess2()
     #positionRemoveDuplicates()
-    RewardAugment(srcPositionAction="storage/position-action/13x13/data.txt",
-                  srcPositionValue="storage/position-value/13x13/data.txt", outputname="rml-data.txt", boardsize=13)
+    RewardAugment(srcPositionAction="13x13pa-withlg.txt_no_duplicates",
+                  srcPositionValue="13x13pv-withlg.txt-post", outputname="rml-data13x13.txt", boardsize=13)
     #posi13Process()
     #v13Process()
 

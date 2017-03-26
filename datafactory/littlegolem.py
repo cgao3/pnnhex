@@ -9,6 +9,32 @@ class LittleGolem:
         self.outfilename=srcOutbasename
         pass
 
+    @staticmethod
+    def convertRawGamesToRMLPositions(srcRawLgGameFileName, boardsize):
+        print("converting to position-action and position-value")
+        paOut=open("/tmp/pa"+repr(boardsize)+".txt","w")
+        pvOut=open("/tmp/pv"+repr(boardsize)+".txt", "w")
+
+        with open(srcRawLgGameFileName, "r") as fin:
+            for game in fin:
+                x = ""
+                y= ""
+                moveseq=game.strip().split()
+                reward=float(moveseq[-1])
+                for i, rawMove in enumerate(moveseq[:-1]):
+                    x += rawMove + " "
+                    paOut.write(x.strip()+'\n')
+                    y += rawMove + " "
+                    if i%2==len(moveseq[:-1])%2:
+                        pvOut.write((y+repr(reward)).strip())
+                        pvOut.write('\n')
+                    else:
+                        v=-reward
+                        pvOut.write((y+repr(v)).strip())
+                        pvOut.write('\n')
+        paOut.close()
+        pvOut.close()
+
     def processAllInputFilesInDir(self):
         self.fout11x11=open(self.outfilename+"raw11x11.txt","w")
         self.fout13x13 = open(self.outfilename+"raw13x13.txt", "w")
@@ -145,5 +171,7 @@ class LittleGolem:
 
 
 if __name__ =="__main__":
-    lg=LittleGolem(srcDir="lgData/11and13", srcOutbasename="lgData/refined/out")
-    lg.processAllInputFilesInDir()
+    #lg=LittleGolem(srcDir="lgData/11and13", srcOutbasename="lgData/refined/out")
+    #lg.processAllInputFilesInDir()
+    LittleGolem.convertRawGamesToRMLPositions("lgData/refined/outraw13x13.txt", 13)
+    LittleGolem.convertRawGamesToRMLPositions("lgData/refined/outraw11x11.txt", 11)

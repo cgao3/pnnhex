@@ -9,7 +9,7 @@ import numpy as np
 import re
 from zobrist.zobrist import *
 
-BOARD_SIZE = 8
+BOARD_SIZE = 13
 BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 5
@@ -74,6 +74,7 @@ class PositionUtilReward(object):
         raws = arr[0:]
 
         #self.batch_label_rewards[kth]=1
+        #print(raws, "next:--", moveRewardStr)
         EmptyCells=[i for i in range(BOARD_SIZE**2)]
         for rawMove in raws:
             (x,y)=self._toIntPair(rawMove)

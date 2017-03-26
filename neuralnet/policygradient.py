@@ -211,7 +211,7 @@ class PGNetwork(object):
         tf.get_variable_scope().reuse_variables()
         sess = tf.Session()
         thisLogits = net.model(data)
-        model_path_this="models/rmlmodel/rmlmodel.ckpt-120000"
+        model_path_this="models/rmlmodel/rmlmodel.ckpt-110000"
         saver.restore(sess, model_path_this)
 
         game_rewards = np.ndarray(shape=(batch_game_size,), dtype=np.float32)

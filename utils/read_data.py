@@ -9,7 +9,7 @@ import numpy as np
 
 from zobrist.zobrist import *
 
-BOARD_SIZE = 8
+BOARD_SIZE = 13
 BATCH_SIZE = 64
 INPUT_WIDTH=BOARD_SIZE + 2
 INPUT_DEPTH = 5

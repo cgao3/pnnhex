@@ -105,7 +105,7 @@ class SupervisedNet(object):
 
         saver=tf.train.Saver(max_to_keep=10)
         print_frequency=20
-        test_frequency=50
+        test_frequency=500
         save_frequency=20000
         step=0
         epoch_num=0
@@ -197,9 +197,9 @@ def main(argv=None):
         slnet.inference(FLAGS.slmodel_path)
         return
 
-    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/8x8/Train.txt",
-                       srcTestDataPath="storage/position-action/8x8/Validate.txt",
-                       srcTestPathFinal="storage/position-action/8x8/Test.txt")
+    slnet=SupervisedNet(srcTrainDataPath="storage/position-action/13x13/Train.txt",
+                       srcTestDataPath="storage/position-action/13x13/Validate.txt",
+                       srcTestPathFinal="storage/position-action/13x13/Test.txt")
     slnet.train(FLAGS.nSteps)
 
 if __name__ == "__main__":

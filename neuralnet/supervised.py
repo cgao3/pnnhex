@@ -19,6 +19,7 @@ tf.flags.DEFINE_string("summaries_dir","/tmp/slnet_logs", "where the summaries a
 tf.app.flags.DEFINE_integer("nSteps", 40001, "number of training steps")
 tf.app.flags.DEFINE_boolean("inference", False, "for inference?")
 tf.app.flags.DEFINE_string("slmodel_path", MODELS_DIR+SLMODEL_NAME, "for inference, please indicate SL Model path.")
+tf.app.flags.DEFINE_string("restore_model_path", default_value="", docstring="restore a model, continue training")
 FLAGS = tf.app.flags.FLAGS
 
 '''game positions supervised learning'''
@@ -34,7 +35,7 @@ class SupervisedNet(object):
         self.inputLayer=Layer("InputLayer", paddingMethod="VALID")
         self.convLayers=[Layer("ConvLayer%d"%i) for i in xrange(nLayers)]
 
-    def model(self, dataNode, kernalSize=(3,3), kernalDepth=48):
+    def model(self, dataNode, kernalSize=(3,3), kernalDepth=128):
         weightShape=kernalSize+(INPUT_DEPTH, kernalDepth)
         output=self.inputLayer.convolve(dataNode, weight_shape=weightShape, bias_shape=(kernalDepth,))
 

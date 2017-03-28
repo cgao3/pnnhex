@@ -14,7 +14,6 @@ class LittleGolem:
         print("converting to position-action and position-value")
         paOut=open("/tmp/pa"+repr(boardsize)+".txt","w")
         pvOut=open("/tmp/pv"+repr(boardsize)+".txt", "w")
-
         with open(srcRawLgGameFileName, "r") as fin:
             for game in fin:
                 x = ""
@@ -83,40 +82,48 @@ class LittleGolem:
     def getAlternatingGame(self, line, RE, withSwap=False):
         assert(self.boardsize)
         assert(RE)
-        movepattern=r'[B|W]\[[a-zA-Z][a-zA-Z]\]'
+        movepattern=r';[B|W]\[[a-z][a-z]\]'
+        moveP13=r';[B|W]\[[a-m][a-m]\]'
+        moveP19=r';[B|W]\[[a-s][a-s]\]'
+        moveP11=r';[B|W]\[[a-k][a-k]\]'
+        if self.boardsize==11:
+            movepattern=moveP11
+        elif self.boardsize==13:
+            movepattern=moveP13
+        elif self.boardsize==19:
+            movepattern=moveP19
+
         g=re.findall(movepattern,line)
         if len(g)<5:
             return None,None
         moveseq=[]
         if not withSwap:
             for m in g:
-                # in B[ie] or W[ie]
-                player=m[0]
+                # in ;B[ie] or ;W[ie]
+                player=m[1]
                 assert(player=='B' or player=='W')
-                move=m[2:-1]
+                move=m[3:-1]
                 x,y=self.convertMove(move)
 
                 #let B be first move
                 player='W' if player=='B' else 'B'
                 strmove=player+'['+x+y+']'
                 moveseq.append(strmove)
-
         else:
-            pass
-            assert(g[0][0]=='W' and g[1][0]=='W')
+            assert(g[0][1]=='W' and g[1][1]=='W')
             for i,m in enumerate(g):
                 if i==0:
-                    x,y=self.convertMove(m[2:-1])
+                    x,y=self.convertMove(m[3:-1])
                     moveseq.append('B['+x+y+']')
                     continue
-                player = m[0]
+                player = m[1]
                 assert (player == 'B' or player == 'W')
-                move = m[2:-1]
+                move = m[3:-1]
                 x, y = self.convertMove(move)
                 # because of swap, B is the first player
                 strmove = player + '[' + x + y + ']'
                 moveseq.append(strmove)
-        valueLabel = 1.0 if moveseq[-1][0] == RE else -1.0
+        valueLabel = 1.0
 
         print("move seq:", moveseq, valueLabel)
         return moveseq, valueLabel
@@ -126,20 +133,23 @@ class LittleGolem:
         x=move[0]
         y=ord(move[1])-ord('a')+1
         return (x,str(y))
+
     def getGameResult(self, line):
         patternRE=r'RE\[[B|W]\]'
-        x=re.findall(patternRE,line)
-        if not x:
+        patternResign=r';[B|W]\[resign\]'
+        #x=re.findall(patternRE,line)
+        res=re.findall(patternResign, line)
+        if not res:
             return LittleGolem.EMPTY
-        elif str(x).find('W'):
+        elif str(res).find('W'):
             return LittleGolem.WHITE
-        elif str(x).find('B'):
+        elif str(res).find('B'):
             return LittleGolem.BLACK
         print("RE ERROR!")
-        return None
+        return LittleGolem.EMPTY
 
     def checkSwap(self, lineGame):
-        patternSwap=r';[B|W]\[swap\];'
+        patternSwap=r';[B|W]\[swap\]'
         x=re.findall(patternSwap,lineGame)
         if x:
             self.hasswap=True
@@ -171,7 +181,7 @@ class LittleGolem:
 
 
 if __name__ =="__main__":
-    #lg=LittleGolem(srcDir="lgData/11and13", srcOutbasename="lgData/refined/out")
-    #lg.processAllInputFilesInDir()
-    LittleGolem.convertRawGamesToRMLPositions("lgData/refined/outraw13x13.txt", 13)
-    LittleGolem.convertRawGamesToRMLPositions("lgData/refined/outraw11x11.txt", 11)
+    lg=LittleGolem(srcDir="lgData/11and13", srcOutbasename="lgData/refined/out")
+    lg.processAllInputFilesInDir()
+    #LittleGolem.convertRawGamesToRMLPositions("lgData/refined/outraw13x13.txt", 13)
+    #LittleGolem.convertRawGamesToRMLPositions("lgData/refined/outraw11x11.txt", 11)

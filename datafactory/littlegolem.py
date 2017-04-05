@@ -64,12 +64,12 @@ class LittleGolem:
                 if not moveseq:
                     continue
                 if self.boardsize==11:
-                    self.fout11x11.write(" ".join(moveseq) + " " + str(value) + '\n')
+                    self.fout11x11.write(" ".join(moveseq) + '\n')
                 elif self.boardsize==13:
                     print("move seq type:", type(moveseq))
-                    self.fout13x13.write(" ".join(moveseq) + " " + str(value)+ '\n')
+                    self.fout13x13.write(" ".join(moveseq)+ '\n')
                 elif self.boardsize==19:
-                    self.fout19x19.write(" ".join(moveseq) + " " + str(value)+ '\n')
+                    self.fout19x19.write(" ".join(moveseq) + '\n')
                 pass
             else:
                 print("no board size?? wrong!")
@@ -123,7 +123,7 @@ class LittleGolem:
                 # because of swap, B is the first player
                 strmove = player + '[' + x + y + ']'
                 moveseq.append(strmove)
-        valueLabel = 1.0
+        valueLabel = ""
 
         print("move seq:", moveseq, valueLabel)
         return moveseq, valueLabel

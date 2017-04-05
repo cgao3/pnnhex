@@ -316,8 +316,8 @@ if __name__ == "__main__":
     #vpostprocess()
     #vprocess2()
     #positionRemoveDuplicates()
-    RewardAugment(srcPositionAction="13x13pa-withlg.txt_no_duplicates",
-                  srcPositionValue="13x13pv-withlg.txt-post", outputname="rml-data13x13.txt", boardsize=13)
-    #posi13Process()
+    #RewardAugment(srcPositionAction="13x13pa-withlg.txt_no_duplicates",
+                  #srcPositionValue="13x13pv-withlg.txt-post", outputname="rml-data13x13.txt", boardsize=13)
+    posi13Process()
     #v13Process()
 

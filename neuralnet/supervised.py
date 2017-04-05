@@ -34,10 +34,17 @@ class SupervisedNet(object):
         self.inputLayer=Layer("InputLayer", paddingMethod="VALID")
         self.convLayers=[Layer("ConvLayer%d"%i) for i in xrange(nLayers)]
 
-    def model(self, dataNode, kernalSize=(3,3), kernalDepth=48):
-        weightShape=kernalSize+(INPUT_DEPTH, kernalDepth)
+    def model(self, dataNode, kernalSize=(3,3), kernalDepth=128):
+        #first conv uses 5x5 filter,
+        if PADDINGS >1:
+            assert(PADDINGS==2)
+            #check if the padding border if
+            weightShape=(5,5)+(INPUT_DEPTH, kernalDepth)
+        else:
+            weightShape = kernalSize + (INPUT_DEPTH, kernalDepth)
         output=self.inputLayer.convolve(dataNode, weight_shape=weightShape, bias_shape=(kernalDepth,))
 
+        #all other layers use 3x3
         weightShape=kernalSize+(kernalDepth, kernalDepth)
         for i in xrange(self.nLayers):
             out=self.convLayers[i].convolve(output, weight_shape=weightShape, bias_shape=(kernalDepth,))
@@ -51,7 +58,7 @@ class SupervisedNet(object):
         self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(num_lines, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
         putil=PositionUtil3(positiondata_filename=srcIn, batch_size=num_lines)
         putil.prepare_batch()
-        self.setup_architecture(nLayers=5)
+        self.setup_architecture(nLayers=8)
         self.xLogits = self.model(self.xInputNode)
         saver = tf.train.Saver()
         with tf.Session() as sess:
@@ -96,8 +103,8 @@ class SupervisedNet(object):
         tf.get_variable_scope().reuse_variables()
         self.xLogits=self.model(self.xInputNode)
         
-        trainDataUtil = PositionUtil3(positiondata_filename=self.srcTrainPath, batch_size=BATCH_SIZE)
-        testDataUtil = PositionUtil3(positiondata_filename=self.srcTestPath, batch_size=BATCH_SIZE)
+        trainDataUtil = PositionUtil9(positiondata_filename=self.srcTrainPath, batch_size=BATCH_SIZE)
+        testDataUtil = PositionUtil9(positiondata_filename=self.srcTestPath, batch_size=BATCH_SIZE)
 
         accuracyPlaceholder = tf.placeholder(tf.float32)
         accuracyTrainSummary = tf.summary.scalar("Accuracy (Training)", accuracyPlaceholder)
@@ -158,7 +165,7 @@ class SupervisedNet(object):
 
             print("Testing error on test data is:")
             testDataUtil.close_file()
-            testDataUtil=PositionUtil3(positiondata_filename=self.srcTestPathFinal, batch_size=BATCH_SIZE)
+            testDataUtil=PositionUtil9(positiondata_filename=self.srcTestPathFinal, batch_size=BATCH_SIZE)
             hasOneEpoch=False
             sum_run_error=0.0
             sum2=0.0

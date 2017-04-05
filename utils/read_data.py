@@ -232,8 +232,8 @@ class PositionUtil9(object):
         self.WSTONE_PLANE=1
         self.BBRIDGE_ENDPOINTS_PLANE=2
         self.WBRIDGE_ENDPOINTS_PLANE=3
-        self.BLACK_PLANE=4
-        self.WHITE_PLANE=5
+        self.BTOPLAY_PLANE=4
+        self.WTOPLAY_PLANE=5
         self.SAVE_BRIDGE_PLANE=6
         self.FORM_BRIDGE_PLANE=7
         self.EMPTY_POINTS_PLALNE=8
@@ -262,39 +262,41 @@ class PositionUtil9(object):
         return nextEpoch
 
     def _build_batch_at(self, kth, line):
+        self.flagFlip = False
         arr = line.strip().split()
         (x, y) = self._toIntPair(arr[-1])
+
         self.batch_labels[kth] = x * BOARD_SIZE + y
 
         #empty positions
         self.batch_positions[kth, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.EMPTY_POINTS_PLALNE] = 1
         # black occupied
         for i in range(self.NUMPADDING):
-            self.batch_positions[kth, 0:INPUT_WIDTH, i, self.BLACK_PLANE] = 1
-            self.batch_positions[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1 - i, self.BLACK_PLANE] = 1
+            self.batch_positions[kth, 0:INPUT_WIDTH, i, self.BSTONE_PLANE] = 1
+            self.batch_positions[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1 - i, self.BSTONE_PLANE] = 1
         # white occupied
         for j in range(self.NUMPADDING):
-            self.batch_positions[kth, j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.WHITE_PLANE] = 1
-            self.batch_positions[kth, INPUT_WIDTH - 1-j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.WHITE_PLANE] = 1
+            self.batch_positions[kth, j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.WSTONE_PLANE] = 1
+            self.batch_positions[kth, INPUT_WIDTH - 1-j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.WSTONE_PLANE] = 1
         raws = arr[0:-1]
         self._set_board(raws)
         turn = HexColor.BLACK
         #set black/white stone planes, and empty point plane
         for raw in raws:
             (x, y) = self._toIntPair(raw)
-            x, y = x + 1, y + 1
-            ind = self.BLACK_PLANE if turn == HexColor.BLACK else self.WHITE_PLANE
+            x, y = x + self.NUMPADDING, y + self.NUMPADDING
+            ind = self.BSTONE_PLANE if turn == HexColor.BLACK else self.WSTONE_PLANE
             self.batch_positions[kth, x, y, ind] = 1
             self.batch_positions[kth, x, y, self.EMPTY_POINTS_PLALNE] = 0
             turn = HexColor.EMPTY - turn
 
         #set toplay plane
         if turn==HexColor.BLACK:
-            self.batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.BLACK_PLANE]=1
-            self.batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.WHITE_PLANE]=0
+            self.batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.BTOPLAY_PLANE]=1
+            self.batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.WTOPLAY_PLANE]=0
         else:
-            self.batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.BLACK_PLANE] = 0
-            self.batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.WHITE_PLANE] = 1
+            self.batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.BTOPLAY_PLANE] = 0
+            self.batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.WTOPLAY_PLANE] = 1
 
         ind_bridge_black = self.BBRIDGE_ENDPOINTS_PLANE
         ind_bridge_white = self.WBRIDGE_ENDPOINTS_PLANE
@@ -354,7 +356,7 @@ class PositionUtil9(object):
     used to check brige-related pattern,
     '''
     def _set_board(self, raws):
-        self._board.fill(0)
+        self._board.fill(HexColor.EMPTY)
         #set black padding borders
         for i in range(self.NUMPADDING):
             self._board[0:INPUT_WIDTH, i] = HexColor.BLACK
@@ -374,6 +376,12 @@ class PositionUtil9(object):
     def _toIntPair(self, raw):
         x = ord(raw[2].lower()) - ord('a')
         y = int(raw[3:-1]) - 1
+        assert(0<=x<BOARD_SIZE and 0<=y<BOARD_SIZE)
+        imove=x*BOARD_SIZE+y
+        if self.flagFlip:
+            imove=BOARD_SIZE**2 - imove
+        x=imove//BOARD_SIZE
+        y=imove%BOARD_SIZE
         return (x, y)
 
 #81 channels.

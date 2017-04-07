@@ -47,7 +47,7 @@ class MoveConvertUtil:
     @staticmethod
     def rotateMove180(intMove):
         assert(0<=intMove<BOARD_SIZE**2)
-        return BOARD_SIZE**2 - intMove
+        return BOARD_SIZE**2 -1 - intMove
 
 def state_to_str(g):
     size=BOARD_SIZE

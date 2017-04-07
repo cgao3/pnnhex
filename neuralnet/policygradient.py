@@ -3,7 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from utils.read_data import BOARD_SIZE, INPUT_WIDTH, INPUT_DEPTH, data_util
+from utils.read_data import data_util
+from utils.commons import *
+
 import numpy as np
 from utils.unionfind import unionfind
 import tensorflow as tf

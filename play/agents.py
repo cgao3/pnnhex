@@ -8,7 +8,7 @@ from utils.game_util import *
 from neuralnet.supervised import SupervisedNet
 import threading
 from play.program import Program
-from utils.read_data import INPUT_WIDTH, INPUT_DEPTH, BOARD_SIZE
+from utils.commons import *
 
 #WrapperAgent can wrap an exe (mohex/wolve) or an exe_nn_agent that implements the GtpInterface
 class WrapperAgent(object):
@@ -57,9 +57,11 @@ class WrapperAgent(object):
 class NNAgent(object):
 
     def __init__(self, model_location, name, is_value_net=False):
+        self.tensorUtil=RLTensorUtil13x13()
         self.model_path=model_location
         self.agent_name=name
         self.is_value_net=is_value_net
+
         self.initialize_game([])
 
     def initialize_game(self, initialRawMoveList):
@@ -68,7 +70,8 @@ class NNAgent(object):
             self.game_state.append(MoveConvertUtil.rawMoveToIntMove(rawmove))
 
         self.boardtensor=np.zeros(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
-        RLTensorUtil.makeTensorInBatch(self.boardtensor,0,self.game_state)
+
+        self.tensorUtil.set_position_tensors_in_batch(self.boardtensor,0,self.game_state)
         self.load_model()
 
     def load_model(self):
@@ -81,7 +84,7 @@ class NNAgent(object):
             self.position_values=np.ndarray(dtype=np.float32, shape=(BOARD_SIZE**2,))
         else:
             self.net = SupervisedNet(srcTestDataPath=None,srcTrainDataPath=None, srcTestPathFinal=None)
-            self.net.setup_architecture(nLayers=5)
+            self.net.setup_architecture(nLayers=8)
             self.logit=self.net.model(self.data_node)
         saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)
@@ -92,13 +95,13 @@ class NNAgent(object):
             for rawmove in moveList:
                 self.game_state.append(MoveConvertUtil.rawMoveToIntMove(rawmove))
         self.boardtensor.fill(0)
-        RLTensorUtil.makeTensorInBatch(self.boardtensor,0,self.game_state)
+        self.tensorUtil.set_position_tensors_in_batch(self.boardtensor, 0, self.game_state)
 
     #0-black player, 1-white player
     def play_move(self, intplayer, intmove):
         self.game_state.append(intmove)
         self.boardtensor.fill(0)
-        RLTensorUtil.makeTensorInBatch(batchPositionTensors=self.boardtensor, kth=0, gamestate=self.game_state)
+        self.tensorUtil.set_position_tensors_in_batch(self.boardtensor, 0, self.game_state)
 
     def generate_move(self, intplayer=None):
         if self.is_value_net :

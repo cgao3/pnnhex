@@ -9,7 +9,7 @@ import argparse
 from utils.unionfind import unionfind
 from play.agents import WrapperAgent
 
-from utils.read_data import BOARD_SIZE
+from utils.commons import BOARD_SIZE
 
 EXE_NN_AGENT_NAME="/home/cgao3/PycharmProjects/nnhex/play/exec_nn_agent.py "
 EXE_HEX_PATH="/home/cgao3/benzene-vanilla/src/mohex/mohex "

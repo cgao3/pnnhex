@@ -2,7 +2,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import absolute_import
 
-from utils.read_data import BOARD_SIZE, INPUT_DEPTH, INPUT_WIDTH
+
+from utils.commons import *
 from zobrist.zobrist import HexColor
 
 import numpy as np
@@ -13,6 +14,9 @@ SOUTH_EDGE=-3
 EAST_EDGE=-2
 WEST_EDGE=-4
 
+'''''
+Rawmove in the format 'a10'
+'''''
 class MoveConvertUtil:
     def __init__(self):
         pass
@@ -39,6 +43,11 @@ class MoveConvertUtil:
         x, y = MoveConvertUtil.intMoveToPair(intMove)
         y += 1
         return chr(x + ord('a')) + repr(y)
+
+    @staticmethod
+    def rotateMove180(intMove):
+        assert(0<=intMove<BOARD_SIZE**2)
+        return BOARD_SIZE**2 - intMove
 
 def state_to_str(g):
     size=BOARD_SIZE
@@ -163,75 +172,132 @@ def max_selection(logits, currentstate):
     del empty_positions, effective_logits
     return ret
 
-class RLTensorUtil:
+class RLTensorUtil13x13:
     def __init__(self):
-        pass
+        self._board = np.ndarray(dtype=np.int32, shape=(INPUT_WIDTH, INPUT_WIDTH))
+        self.BSTONE_PLANE = 0
+        self.WSTONE_PLANE = 1
+        self.BBRIDGE_ENDPOINTS_PLANE = 2
+        self.WBRIDGE_ENDPOINTS_PLANE = 3
+        self.BTOPLAY_PLANE = 4
+        self.WTOPLAY_PLANE = 5
+        self.SAVE_BRIDGE_PLANE = 6
+        self.FORM_BRIDGE_PLANE = 7
+        self.EMPTY_POINTS_PLALNE = 8
+        self.NUMPADDING = PADDINGS
 
-    @staticmethod
-    def makeTensorInBatch(batchPositionTensors, kth, gamestate):
-        #gamestate is an integer array of moves
+    def set_position_label_in_batch(self, batchLabels, kth, nextMove):
+        batchLabels[kth]=nextMove
 
-        batchPositionTensors[kth, 1:INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, INPUT_DEPTH - 1] = 1
+    def set_position_tensors_in_batch(self, batchPositionTensors, kth, intState):
+        # empty positions
+        batchPositionTensors[kth, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.EMPTY_POINTS_PLALNE] = 1
+
+        batch_positions=batchPositionTensors
         # black occupied
-        batchPositionTensors[kth, 0:INPUT_WIDTH, 0, 0] = 1
-        batchPositionTensors[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1, 0] = 1
+        for i in range(self.NUMPADDING):
+            batch_positions[kth, 0:INPUT_WIDTH, i, self.BSTONE_PLANE] = 1
+            batch_positions[kth, 0:INPUT_WIDTH, INPUT_WIDTH - 1 - i, self.BSTONE_PLANE] = 1
         # white occupied
-        batchPositionTensors[kth, 0, 1:INPUT_WIDTH - 1, 1] = 1
-        batchPositionTensors[kth, INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1, 1] = 1
+        for j in range(self.NUMPADDING):
+            batch_positions[kth, j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING, self.WSTONE_PLANE] = 1
+            batch_positions[kth, INPUT_WIDTH - 1 - j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING,
+            self.WSTONE_PLANE] = 1
 
-        board=np.ndarray(shape=(INPUT_WIDTH, INPUT_WIDTH), dtype=np.int32)
-        RLTensorUtil.set_board(board, gamestate)
-
+        self._set_board(intState)
         turn = HexColor.BLACK
-        for imove in gamestate:
-            (x, y) = RLTensorUtil.intMoveToPair(imove)
-            x, y = x + 1, y + 1
-            ind = 0 if turn == HexColor.BLACK else 1
-            batchPositionTensors[kth, x, y, ind] = 1
-            batchPositionTensors[kth, x, y, INPUT_DEPTH - 1] = 0
+        # set black/white stone planes, and empty point plane
+        for intMove in intState:
+            (x, y) = MoveConvertUtil.intMoveToPair(intMove)
+            x, y = x + self.NUMPADDING, y + self.NUMPADDING
+            ind = self.BSTONE_PLANE if turn == HexColor.BLACK else self.WSTONE_PLANE
+            batch_positions[kth, x, y, ind] = 1
+            batch_positions[kth, x, y, self.EMPTY_POINTS_PLALNE] = 0
             turn = HexColor.EMPTY - turn
 
-        ind_bridge_black = 2
-        ind_bridge_white = 3
-        for i in xrange(INPUT_WIDTH - 1):
-            for j in xrange(INPUT_WIDTH - 1):
-                p1 = board[i, j], board[i + 1, j], board[i, j + 1], board[i + 1, j + 1]
+        # set toplay plane
+        if turn == HexColor.BLACK:
+            batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.BTOPLAY_PLANE] = 1
+            batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.WTOPLAY_PLANE] = 0
+        else:
+            batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.BTOPLAY_PLANE] = 0
+            batch_positions[kth, 0:INPUT_WIDTH, 0:INPUT_WIDTH, self.WTOPLAY_PLANE] = 1
+
+        ind_bridge_black = self.BBRIDGE_ENDPOINTS_PLANE
+        ind_bridge_white = self.WBRIDGE_ENDPOINTS_PLANE
+        for i in xrange(self.NUMPADDING, INPUT_WIDTH - self.NUMPADDING):
+            for j in xrange(self.NUMPADDING, INPUT_WIDTH - self.NUMPADDING):
+                p1 = self._board[i, j], self._board[i + 1, j], self._board[i, j + 1], self._board[i + 1, j + 1]
                 if p1[0] == HexColor.BLACK and p1[3] == HexColor.BLACK and p1[1] != HexColor.WHITE and p1[
                     2] != HexColor.WHITE:
-                    batchPositionTensors[kth, i, j, ind_bridge_black] = 1
-                    batchPositionTensors[kth, i + 1, j + 1, ind_bridge_black] = 1
+                    batch_positions[kth, i, j, ind_bridge_black] = 1
+                    batch_positions[kth, i + 1, j + 1, ind_bridge_black] = 1
                 if p1[0] == HexColor.WHITE and p1[3] == HexColor.WHITE and p1[1] != HexColor.BLACK and p1[
                     2] != HexColor.BLACK:
-                    batchPositionTensors[kth, i, j, ind_bridge_white] = 1
-                    batchPositionTensors[kth, i + 1, j + 1, ind_bridge_white] = 1
+                    batch_positions[kth, i, j, ind_bridge_white] = 1
+                    batch_positions[kth, i + 1, j + 1, ind_bridge_white] = 1
                 if j - 1 >= 0:
-                    p2 = board[i, j], board[i + 1, j - 1], board[i + 1, j], board[i, j + 1]
+                    p2 = self._board[i, j], self._board[i + 1, j - 1], self._board[i + 1, j], self._board[i, j + 1]
                     if p2[1] == HexColor.BLACK and p2[3] == HexColor.BLACK and p2[0] != HexColor.WHITE and p2[
                         2] != HexColor.WHITE:
-                        batchPositionTensors[kth, i + 1, j - 1, ind_bridge_black] = 1
-                        batchPositionTensors[kth, i, j + 1, ind_bridge_black] = 1
+                        batch_positions[kth, i + 1, j - 1, ind_bridge_black] = 1
+                        batch_positions[kth, i, j + 1, ind_bridge_black] = 1
                     if p2[1] == HexColor.WHITE and p2[3] == HexColor.WHITE and p2[0] != HexColor.BLACK and p2[
                         2] != HexColor.BLACK:
-                        batchPositionTensors[kth, i + 1, j - 1, ind_bridge_white] = 1
-                        batchPositionTensors[kth, i, j + 1, ind_bridge_white] = 1
+                        batch_positions[kth, i + 1, j - 1, ind_bridge_white] = 1
+                        batch_positions[kth, i, j + 1, ind_bridge_white] = 1
 
-    @staticmethod
-    def set_board(board, gamestate):
-        board.fill(0)
-        board[0:INPUT_WIDTH, 0] = HexColor.BLACK
-        board[0:INPUT_WIDTH, INPUT_WIDTH - 1] = HexColor.BLACK
-        board[0, 1:INPUT_WIDTH - 1] = HexColor.WHITE
-        board[INPUT_WIDTH - 1, 1:INPUT_WIDTH - 1] = HexColor.WHITE
+                # for toplay save bridge
+                if p1[0] == p1[3] and p1[0] == turn and p1[1] != turn and p1[2] != turn:
+                    if p1[1] == HexColor.EMPTY and p1[2] == HexColor.EMPTY - turn:
+                        batch_positions[kth, i + 1, j, self.SAVE_BRIDGE_PLANE] = 1
+                    elif p1[1] == HexColor.EMPTY - turn and p1[2] == HexColor.EMPTY:
+                        batch_positions[kth, i, j + 1, self.SAVE_BRIDGE_PLANE] = 1
+
+                if j - 1 >= 0:
+                    p2 = self._board[i, j], self._board[i + 1, j - 1], self._board[i + 1, j], self._board[i, j + 1]
+                    if p2[1] == p2[3] and p2[1] == turn and p2[0] != turn and p2[2] != turn:
+                        if p2[0] == HexColor.EMPTY and p2[2] == HexColor.EMPTY - turn:
+                            batch_positions[kth, i, j, self.SAVE_BRIDGE_PLANE] = 1
+                        elif p2[0] == HexColor.EMPTY - turn and p2[2] == HexColor.EMPTY:
+                            batch_positions[kth, i + 1, j, self.SAVE_BRIDGE_PLANE] = 1
+
+                # for toplay form bridge
+                if p1[1] == HexColor.EMPTY and p1[2] == HexColor.EMPTY:
+                    if p1[0] == HexColor.EMPTY and p1[3] == turn:
+                        batch_positions[kth, i, j, self.FORM_BRIDGE_PLANE] = 1
+                    elif p1[0] == turn and p1[3] == HexColor.EMPTY:
+                        batch_positions[kth, i + 1, j + 1, self.FORM_BRIDGE_PLANE] = 1
+
+                if j - 1 >= 0:
+                    p2 = self._board[i, j], self._board[i + 1, j - 1], self._board[i + 1, j], self._board[i, j + 1]
+                    if p2[0] == p2[2] == HexColor.EMPTY:
+                        if p2[1] == HexColor.EMPTY and p2[3] == turn:
+                            batch_positions[kth, i + 1, j - 1, self.FORM_BRIDGE_PLANE] = 1
+                        elif p2[1] == turn and p2[3] == HexColor.EMPTY:
+                            batch_positions[kth, i, j + 1, self.FORM_BRIDGE_PLANE] = 1
+
+    '''A square board the same size as Tensor input, each point is either EMPTY, BLACK or WHITE
+    used to check brige-related pattern,
+    '''
+    def _set_board(self, intState):
+        self._board.fill(HexColor.EMPTY)
+        # set black padding borders
+        for i in range(self.NUMPADDING):
+            self._board[0:INPUT_WIDTH, i] = HexColor.BLACK
+            self._board[0:INPUT_WIDTH, INPUT_WIDTH - 1 - i] = HexColor.BLACK
+        # set white padding borders
+        for j in range(self.NUMPADDING):
+            self._board[j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING] = HexColor.WHITE
+            self._board[INPUT_WIDTH - 1 - j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING] = HexColor.WHITE
         turn = HexColor.BLACK
-        for imove in gamestate:
-            (x, y) = RLTensorUtil.intMoveToPair(imove)
-            x, y = x + 1, y + 1
-            board[x, y] = turn
+        for intMove in intState:
+            (x, y) = MoveConvertUtil.intMoveToPair(intMove)
+            x, y = x + self.NUMPADDING, y + self.NUMPADDING
+            self._board[x, y] = turn
             turn = HexColor.EMPTY - turn
+            # B[c3]=> c3 => ('c-'a')*boardsize+(3-1) , W[a11]=> a11
 
-    @staticmethod
-    def intMoveToPair(imove):
-        x=imove//BOARD_SIZE
-        y=imove%BOARD_SIZE
-        return (x,y)
-
+    def makeTensorInBatch(self, batchPositionTensors, batchLabels, kth, intState, intNextMove):
+        self.set_position_label_in_batch(batchLabels, kth, intNextMove)
+        self.set_position_tensors_in_batch(batchPositionTensors, kth, intState)

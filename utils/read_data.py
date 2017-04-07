@@ -247,12 +247,13 @@ class PositionUtil9(object):
         return nextEpoch
 
     def _build_batch_at(self, kth, line):
-        self.flagFlip = False
         arr = line.strip().split()
-
         intMove = self._toIntMove(arr[-1])
         rawMoves=arr[0:-1]
         intgamestate=[self._toIntMove(i) for i in rawMoves]
+        if self.enableRandomFlip and np.random.random()>0.5:
+            intMove=MoveConvertUtil.rotateMove180(intMove)
+            map(MoveConvertUtil.rotateMove180(intMove), intgamestate)
         self.tensorMakeUtil.makeTensorInBatch(self.batch_positions, self.batch_labels, kth, intgamestate, intMove)
 
     def _toIntMove(self, raw):

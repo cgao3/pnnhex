@@ -253,7 +253,8 @@ class PositionUtil9(object):
         intgamestate=[self._toIntMove(i) for i in rawMoves]
         if self.enableRandomFlip and np.random.random()>0.5:
             intMove=MoveConvertUtil.rotateMove180(intMove)
-            map(MoveConvertUtil.rotateMove180(intMove), intgamestate)
+            for i in range(len(intgamestate)):
+                intgamestate[i]=MoveConvertUtil.rotateMove180(intgamestate[i])
         self.tensorMakeUtil.makeTensorInBatch(self.batch_positions, self.batch_labels, kth, intgamestate, intMove)
 
     def _toIntMove(self, raw):

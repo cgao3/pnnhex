@@ -62,7 +62,7 @@ if __name__ == "__main__":
 
     args=parser.parse_args()
     num_games=5000
-    think_time=1
+    think_time=100
     net_exe=EXE_NN_AGENT_NAME + args.model_path +" 2>/dev/null"
     #EXE_HEX_PATH=args.wolve_path
     bot_exe=EXE_HEX_PATH+" 2>/dev/null"
@@ -80,6 +80,8 @@ if __name__ == "__main__":
             bot.sendCommand("param_wolve max_time " + repr(think_time))
         else:
             bot.sendCommand("param_mohex max_time " + repr(think_time))
+            bot.sendCommand("param_mohex num_threads 1")
+            bot.sendCommand("param_mohex max_games 1000")
         bot.sendCommand("boardsize "+ repr(BOARD_SIZE))
         win=run_single_match(net, bot, False)
         if win==HexColor.BLACK: black_win_count += 1

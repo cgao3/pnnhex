@@ -52,40 +52,6 @@ class SupervisedNet(object):
         logits=self.convLayers[self.nLayers-1].move_logits(output, BOARD_SIZE)
         return logits
 
-    def inference(self, lastcheckpoint):
-        srcIn = "dumpy.txt"
-        num_lines = sum(1 for line in open(srcIn))
-        self.xInputNode=tf.placeholder(dtype=tf.float32, shape=(num_lines, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH), name="x_input_node")
-        putil=PositionUtil3(positiondata_filename=srcIn, batch_size=num_lines)
-        putil.prepare_batch()
-        self.setup_architecture(nLayers=8)
-        self.xLogits = self.model(self.xInputNode)
-        saver = tf.train.Saver()
-        with tf.Session() as sess:
-            saver.restore(sess, lastcheckpoint)
-            logits=sess.run(self.xLogits, feed_dict={self.xInputNode:putil.batch_positions})
-
-            action=np.argmax(logits, 1)[0]
-            x,y=action//BOARD_SIZE, action%BOARD_SIZE
-            y +=1
-            print("prediction: "+repr(action)+" "+chr((ord('a')+x))+repr(y))
-            print(np.argmax(logits,1))
-            batch_predict=sess.run(tf.nn.softmax(logits))
-            print(putil.batch_labels)
-            e1=error_topk(batch_predict, putil.batch_labels, k=1)
-            e2=error_topk(batch_predict, putil.batch_labels, k=2)
-            e3=error_topk(batch_predict, putil.batch_labels, k=3)
-            e4=error_topk(batch_predict, putil.batch_labels, k=4)
-            e5=error_topk(batch_predict, putil.batch_labels, k=5)
-            e6=error_topk(batch_predict, putil.batch_labels, k=6)
-            print("top 1 accuracy", 100.0-e1)
-            print("top 2 accuracy", 100.0-e2)
-            print("top 3 accuracy", 100.0 - e3)
-            print("top 4 accuracy", 100.0 - e4)
-            print("top 5 accuracy", 100.0 - e5)
-            print("top 6 accuracy", 100.0 - e6)
-        putil.close_file()
-
     def train(self, nSteps):
         self.batchInputNode = tf.placeholder(dtype=tf.float32, shape=(BATCH_SIZE, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH),name="BatchTrainInputNode")
         self.batchLabelNode = tf.placeholder(dtype=tf.int32, shape=(BATCH_SIZE,), name="BatchTrainLabelNode")
@@ -94,7 +60,7 @@ class SupervisedNet(object):
         fake_input=np.ndarray(dtype=np.float32, shape=(1, INPUT_WIDTH, INPUT_WIDTH, INPUT_DEPTH))
         fake_input.fill(0)
 
-        self.setup_architecture(nLayers=9)
+        self.setup_architecture(nLayers=7)
         batchLogits=self.model(self.batchInputNode)
         batchPrediction=tf.nn.softmax(batchLogits)
         loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(batchLogits, self.batchLabelNode))

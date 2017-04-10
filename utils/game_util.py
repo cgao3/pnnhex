@@ -184,6 +184,7 @@ class RLTensorUtil13x13:
         self.SAVE_BRIDGE_PLANE = 6
         self.FORM_BRIDGE_PLANE = 7
         self.EMPTY_POINTS_PLALNE = 8
+        self.HISTORY_PLANE=9
         self.NUMPADDING = PADDINGS
 
     def set_position_label_in_batch(self, batchLabels, kth, nextMove):
@@ -206,6 +207,7 @@ class RLTensorUtil13x13:
 
         self._set_board(intState)
         turn = HexColor.BLACK
+        t=0.0
         # set black/white stone planes, and empty point plane
         for intMove in intState:
             (x, y) = MoveConvertUtil.intMoveToPair(intMove)
@@ -213,6 +215,10 @@ class RLTensorUtil13x13:
             ind = self.BSTONE_PLANE if turn == HexColor.BLACK else self.WSTONE_PLANE
             batch_positions[kth, x, y, ind] = 1
             batch_positions[kth, x, y, self.EMPTY_POINTS_PLALNE] = 0
+
+            #set history plane
+            t +=1.0
+            batch_positions[kth,x,y, self.HISTORY_PLANE]=np.exp(-t/10.0)
             turn = HexColor.EMPTY - turn
 
         # set toplay plane
@@ -277,6 +283,7 @@ class RLTensorUtil13x13:
                         elif p2[1] == turn and p2[3] == HexColor.EMPTY:
                             batch_positions[kth, i, j + 1, self.FORM_BRIDGE_PLANE] = 1
 
+        #end
     '''A square board the same size as Tensor input, each point is either EMPTY, BLACK or WHITE
     used to check brige-related pattern,
     '''

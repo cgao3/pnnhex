@@ -209,13 +209,13 @@ class PositionUtil3(object):
 
 class PositionUtil9(object):
     '''
-    input depth =9,
+    input depth =10,
     black stones, white stones, black bridge endpoints, white bridge endpoints,
     black toplay planes, white toplay planes // of those two planes, only one is filled with 1.
     toplay(black or white) savebridge points, toplay form bridges, toplay empty points
     '''
     def __init__(self, positiondata_filename, batch_size):
-        assert(INPUT_DEPTH==9)
+        assert(INPUT_DEPTH==10)
         self.data_file_name = positiondata_filename
         self.batch_size = batch_size
         self.reader = open(self.data_file_name, "r")

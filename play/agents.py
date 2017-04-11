@@ -84,7 +84,7 @@ class NNAgent(object):
             self.position_values=np.ndarray(dtype=np.float32, shape=(BOARD_SIZE**2,))
         else:
             self.net = SupervisedNet(srcTestDataPath=None,srcTrainDataPath=None, srcTestPathFinal=None)
-            self.net.setup_architecture(nLayers=8)
+            self.net.setup_architecture(nLayers=7)
             self.logit=self.net.model(self.data_node)
         saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)

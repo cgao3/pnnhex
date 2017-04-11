@@ -218,7 +218,7 @@ class RLTensorUtil13x13:
 
             #set history plane
             t +=1.0
-            batch_positions[kth,x,y, self.HISTORY_PLANE]=np.exp(-t/10.0)
+            batch_positions[kth,x,y, self.HISTORY_PLANE]=np.exp(-1.0/t)
             turn = HexColor.EMPTY - turn
 
         # set toplay plane

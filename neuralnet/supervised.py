@@ -70,7 +70,7 @@ class SupervisedNet(object):
         self.xLogits=self.model(self.xInputNode)
         
         trainDataUtil = PositionUtil9(positiondata_filename=self.srcTrainPath, batch_size=BATCH_SIZE)
-        trainDataUtil.enableRandomFlip=True
+        trainDataUtil.enableRandomFlip=False
         testDataUtil = PositionUtil9(positiondata_filename=self.srcTestPath, batch_size=BATCH_SIZE)
 
         accuracyPlaceholder = tf.placeholder(tf.float32)

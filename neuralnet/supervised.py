@@ -70,7 +70,7 @@ class SupervisedNet(object):
         self.xLogits=self.model(self.xInputNode)
         
         trainDataUtil = PositionUtil9(positiondata_filename=self.srcTrainPath, batch_size=BATCH_SIZE)
-        trainDataUtil.enableRandomFlip=False
+        trainDataUtil.enableRandomFlip=True
         testDataUtil = PositionUtil9(positiondata_filename=self.srcTestPath, batch_size=BATCH_SIZE)
 
         accuracyPlaceholder = tf.placeholder(tf.float32)
@@ -80,9 +80,11 @@ class SupervisedNet(object):
         saver=tf.train.Saver(max_to_keep=10)
         print_frequency=20
         test_frequency=500
-        save_frequency=20000
+        save_frequency=5000
         step=0
         epoch_num=0
+
+        BEST_ERROR=100.0
 
         with tf.Session() as sess:
             init=tf.variables_initializer(tf.global_variables(), name="init_node")
@@ -123,7 +125,25 @@ class SupervisedNet(object):
                     summary = sess.run(accuracyValidateSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
                     validateWriter.add_summary(summary, step)
                 if step>=40000 and step %save_frequency==0:
-                    saver.save(sess, os.path.join(sl_model_dir, SLMODEL_NAME), global_step=step)
+                    testDataUtil_save = PositionUtil9(positiondata_filename=self.srcTestPathFinal, batch_size=BATCH_SIZE)
+                    hasOneEpoch = False
+                    sum_run_error = 0.0
+                    ite = 0
+                    while hasOneEpoch == False:
+                        hasOneEpoch = testDataUtil_save.prepare_batch()
+                        x_input = testDataUtil_save.batch_positions.astype(np.float32)
+                        feed_d = {self.batchInputNode: x_input}
+                        predict = sess.run(batchPrediction, feed_dict=feed_d)
+                        run_error = error_rate(predict, testDataUtil_save.batch_labels)
+                        sum_run_error += run_error
+                        ite += 1
+                    run_error = sum_run_error / ite
+                    print("Test evaluation error rate", run_error)
+                    if run_error < BEST_ERROR:
+                        print("smaller than best error: ", BEST_ERROR, "; saving the model")
+                        saver.save(sess, os.path.join(sl_model_dir, SLMODEL_NAME), global_step=step)
+                        BEST_ERROR = run_error
+                    testDataUtil_save.close_file()
                 step += 1
             print("saving computation graph for c++ inference")
             tf.train.write_graph(sess.graph_def, sl_model_dir, "graph.pbtxt")

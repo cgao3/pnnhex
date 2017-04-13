@@ -215,7 +215,7 @@ class PositionUtil9(object):
     toplay(black or white) savebridge points, toplay form bridges, toplay empty points
     '''
     def __init__(self, positiondata_filename, batch_size):
-        assert(INPUT_DEPTH==10)
+        assert(INPUT_DEPTH==9)
         self.data_file_name = positiondata_filename
         self.batch_size = batch_size
         self.reader = open(self.data_file_name, "r")
@@ -251,7 +251,7 @@ class PositionUtil9(object):
         intMove = self._toIntMove(arr[-1])
         rawMoves=arr[0:-1]
         intgamestate=[self._toIntMove(i) for i in rawMoves]
-        if self.enableRandomFlip and np.random.random()>0.5:
+        if self.enableRandomFlip and np.random.random()<0.5:
             intMove=MoveConvertUtil.rotateMove180(intMove)
             for i in range(len(intgamestate)):
                 intgamestate[i]=MoveConvertUtil.rotateMove180(intgamestate[i])

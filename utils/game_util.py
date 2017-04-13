@@ -184,7 +184,7 @@ class RLTensorUtil13x13:
         self.SAVE_BRIDGE_PLANE = 6
         self.FORM_BRIDGE_PLANE = 7
         self.EMPTY_POINTS_PLALNE = 8
-        self.HISTORY_PLANE=9
+        #self.HISTORY_PLANE=9
         self.NUMPADDING = PADDINGS
 
     def set_position_label_in_batch(self, batchLabels, kth, nextMove):
@@ -207,7 +207,7 @@ class RLTensorUtil13x13:
 
         self._set_board(intState)
         turn = HexColor.BLACK
-        t=0.0
+        #t=0.0
         # set black/white stone planes, and empty point plane
         for intMove in intState:
             (x, y) = MoveConvertUtil.intMoveToPair(intMove)
@@ -217,8 +217,8 @@ class RLTensorUtil13x13:
             batch_positions[kth, x, y, self.EMPTY_POINTS_PLALNE] = 0
 
             #set history plane
-            t +=1.0
-            batch_positions[kth,x,y, self.HISTORY_PLANE]=np.exp(-1.0/t)
+            #t +=1.0
+            #batch_positions[kth,x,y, self.HISTORY_PLANE]=np.exp(-1.0/t)
             turn = HexColor.EMPTY - turn
 
         # set toplay plane

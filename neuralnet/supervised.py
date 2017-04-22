@@ -80,7 +80,7 @@ class SupervisedNet(object):
         saver=tf.train.Saver(max_to_keep=10)
         print_frequency=20
         test_frequency=500
-        save_frequency=5000
+        save_frequency=500
         step=0
         epoch_num=0
 
@@ -108,7 +108,7 @@ class SupervisedNet(object):
                     print("epoch: ", epoch_num, "step:", step, "loss:", run_loss, "error_rate:", run_error )
                     summary = sess.run(accuracyTrainSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
                     trainWriter.add_summary(summary, step)
-                if step % test_frequency == 0:
+                if False and step % test_frequency == 0:
                     hasOneEpoch=False
                     sum_run_error=0.0
                     ite=0
@@ -124,7 +124,7 @@ class SupervisedNet(object):
                     print("evaluation error rate", run_error)
                     summary = sess.run(accuracyValidateSummary, feed_dict={accuracyPlaceholder: 100.0-run_error})
                     validateWriter.add_summary(summary, step)
-                if step>=40000 and step %save_frequency==0:
+                if step>=4 and step %save_frequency==0:
                     testDataUtil_save = PositionUtil9(positiondata_filename=self.srcTestPathFinal, batch_size=BATCH_SIZE)
                     hasOneEpoch = False
                     sum_run_error = 0.0

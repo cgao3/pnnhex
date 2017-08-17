@@ -56,11 +56,12 @@ class WrapperAgent(object):
 
 class NNAgent(object):
 
-    def __init__(self, model_location, name, is_value_net=False):
+    def __init__(self, model_location, name, n_hidden_layer=8, is_value_net=False):
         self.tensorUtil=RLTensorUtil13x13()
         self.model_path=model_location
         self.agent_name=name
         self.is_value_net=is_value_net
+        self.n_hidden_layer=n_hidden_layer
 
         self.initialize_game([])
 
@@ -84,7 +85,7 @@ class NNAgent(object):
             self.position_values=np.ndarray(dtype=np.float32, shape=(BOARD_SIZE**2,))
         else:
             self.net = SupervisedNet(srcTestDataPath=None,srcTrainDataPath=None, srcTestPathFinal=None)
-            self.net.setup_architecture(nLayers=7)
+            self.net.setup_architecture(nLayers=self.n_hidden_layer-1)
             self.logit=self.net.model(self.data_node)
         saver = tf.train.Saver()
         saver.restore(self.sess, self.model_path)

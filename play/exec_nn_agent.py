@@ -16,7 +16,7 @@ def main(argv=None):
     use the latest model saved by policy gradient reinforcement learning
     """
 
-    agent=NNAgent(argv.model_path, name=argv.model_path, is_value_net=argv.value_net)
+    agent=NNAgent(argv.model_path, name=argv.model_path, n_hidden_layer=argv.n_hidden_layer, is_value_net=argv.value_net)
     interface=GTPInterface(agent)
     while True:
         command=raw_input()
@@ -29,5 +29,6 @@ if __name__ == "__main__":
     parser.add_argument('model_path', type=str, help="the path of the model file")
     parser.add_argument('--value_net', action='store_true', help="value_net model?")
     parser.add_argument('--verbose', action='store_true', help='verbose?')
+    parser.add_argument('--n_hidden_layer', type=int, default=8)
     args=parser.parse_args()
     main(args)

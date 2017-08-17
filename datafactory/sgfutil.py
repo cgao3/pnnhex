@@ -8,7 +8,6 @@ from zobrist.zobrist import *
 import argparse
 
 class SGFPositionActionUtil:
-
     pattern=r';[B|W]\[[a-zA-Z][0-9]+\]'
     def __init__(self, srcdir, outfilename, offset=1):
         self.srcdir=srcdir
@@ -318,6 +317,36 @@ if __name__ == "__main__":
     #positionRemoveDuplicates()
     #RewardAugment(srcPositionAction="13x13pa-withlg.txt_no_duplicates",
                   #srcPositionValue="13x13pv-withlg.txt-post", outputname="rml-data13x13.txt", boardsize=13)
-    posi13Process()
+    #posi13Process()
     #v13Process()
+
+    parser=argparse.ArgumentParser()
+    parser.add_argument("--sgf2positionAction", default=False)
+    parser.add_argument("--sgf2positionValue", default=False)
+    parser.add_argument("--positionActionRemoveDuplicates", default=False)
+
+
+    parser.add_argument("--inDir", default=None)
+    parser.add_argument("--outputFileName", default=None)
+    parser.add_argument("--inputPositionActionFile", default=None)
+    parser.add_argument("--boardsize", default=0, type=int)
+    args=parser.parse_args()
+
+    if(args.sgf2positionAction):
+        if (not args.inDir or not args.outputFileName):
+            print("please indicate --inDir and --outputFileName")
+            exit(0)
+        pUtil=SGFPositionActionUtil(srcdir=args.inDir, outfilename=args.outputFileName)
+        pUtil.doConvertInDir()
+        exit(0)
+
+    if (args.positionActionRemoveDuplicates):
+        if (not args.inputPositionActionFile or not args.boardsize):
+            print("please indicate --inputPositionActionFile")
+            exit(0)
+
+        SGFPositionActionUtil.removeDuplicates(boardsize=args.boardsize, infilename=args.inputPositionActionFile)
+        exit(0)
+
+
 

@@ -11,8 +11,8 @@ from play.agents import WrapperAgent
 
 from utils.commons import BOARD_SIZE
 
-EXE_NN_AGENT_NAME="/home/cgao3/PycharmProjects/nnhex/play/exec_nn_agent.py "
-EXE_HEX_PATH="/home/cgao3/benzene-vanilla/src/mohex/mohex "
+EXE_NN_AGENT_NAME="/home/cgao/PycharmProjects/nnhex/play/exec_nn_agent.py "
+EXE_HEX_PATH="/home/cgao/benzene-vanilla/src/mohex/mohex "
 
 def run_single_match(black_agent, white_agent, verbose=False):
     game=[]
@@ -56,32 +56,37 @@ if __name__ == "__main__":
     parser=argparse.ArgumentParser(description="tournament between agents")
     #parser.add_argument("num_games", type=int, help="num of paired games playing")
     parser.add_argument("model_path", help="where the model locates", type=str)
-    parser.add_argument("--wolve_path",default="/home/cgao3/benzene-vanilla/src/wolve/wolve", help="where is the wolve", type=str)
+    parser.add_argument("--wolve_path",default="/home/cgao/benzene-vanilla/src/wolve/wolve", help="where is the wolve", type=str)
     parser.add_argument("--value_net", help="whether it is valuenet model", action="store_true", default=False)
     parser.add_argument("--verbose", help="verbose?", action="store_true", default=False)
+    parser.add_argument('--n_hidden_layer', type=int, default=8)
 
     args=parser.parse_args()
-    num_games=5000
+    num_games=100
     think_time=100
-    net_exe=EXE_NN_AGENT_NAME + args.model_path +" 2>/dev/null"
-    #EXE_HEX_PATH=args.wolve_path
+    net_exe=EXE_NN_AGENT_NAME + args.model_path +' --n_hidden_layer='+repr(args.n_hidden_layer)+" 2>/dev/null"
+    #net_exe="/home/cgao/CLionProjects/cnn-benzene-play/cmake-build/src/mohex/mohex 2>/dev/null"
+    EXE_HEX_PATH=args.wolve_path
     bot_exe=EXE_HEX_PATH+" 2>/dev/null"
     bot=WrapperAgent(bot_exe, True)
     net=WrapperAgent(net_exe, True)
-    if EXE_HEX_PATH == args.wolve_path:
-        bot.sendCommand("param_wolve max_time "+repr(think_time))
-    else:
-        bot.sendCommand("param_mohex max_time " + repr(think_time))
     white_win_count=0
     black_win_count=0
     for i in range(num_games):
         bot.reconnect()
         if EXE_HEX_PATH == args.wolve_path:
             bot.sendCommand("param_wolve max_time " + repr(think_time))
+            bot.sendCommand('param_wolve max_depth 1')
+            bot.sendCommand('param_wolve use_parallel_solver 0')
         else:
             bot.sendCommand("param_mohex max_time " + repr(think_time))
             bot.sendCommand("param_mohex num_threads 1")
             bot.sendCommand("param_mohex max_games 1000")
+
+            net.sendCommand("param_mohex max_time "+ repr(think_time))
+            net.sendCommand("param_mohex num_threads 1")
+            net.sendCommand("param_mohex max_games 1000")
+            net.sendCommand("boardsize " + repr(BOARD_SIZE))
         bot.sendCommand("boardsize "+ repr(BOARD_SIZE))
         win=run_single_match(net, bot, False)
         if win==HexColor.BLACK: black_win_count += 1

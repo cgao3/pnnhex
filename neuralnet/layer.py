@@ -46,7 +46,6 @@ class Layer(object):
     # input batchsize x BOARDSIZE x BOARDSIZE x DEPTH
     def _one_filter_out(self, input_tensor, boardsize, value_net=False):
         input_shape = input_tensor.get_shape()
-        batch_size = input_shape[0].value
         assert(input_shape[1] == boardsize)
         assert(input_shape[2] == boardsize)
         weight_shape = (1, 1, input_shape[3], 1)
@@ -60,7 +59,7 @@ class Layer(object):
 
         if value_net: return out
 
-        logits = tf.add(tf.reshape(out, shape=(batch_size, boardsize * boardsize)), self.bias, name="output_node")
+        logits = tf.add(tf.reshape(out, shape=(-1, boardsize * boardsize)), self.bias, name="output_node")
         return logits
 
     #output for the value net, one tanh unit fully-connected to the previous layer

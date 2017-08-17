@@ -172,6 +172,76 @@ def max_selection(logits, currentstate):
     del empty_positions, effective_logits
     return ret
 
+
+'''
+12 input planes
+Feture plane index | Description
+0 | Black stones
+1 | White stones
+2 | Empty points
+3 | Toplay (0 for black, 1 for white)
+4 | Black bridge endpoints
+5 | White bridge endpoints
+6 | Toplay save bridge
+7 | Toplay make connection
+8 | Toplay form bridge
+9 | Toplay block opponent's bridge
+10 | Toplay block opponent's form bridge
+11 | Toplay block opponent's make connection
+
+'''
+
+class BuildInputTensorUtil(object):
+    def __init__(self):
+        self._board=np.ndarray(dtype=np.int32, shape=(INPUT_WIDTH, INPUT_WIDTH))
+        self.IndBlackStone=0
+        self.IndWhiteStone=1
+        self.IndEmptyPoint=2
+        self.IndToplay=3
+        self.IndBBridgeEndpoints=4
+        self.IndWBridgeEndpoints=5
+        self.IndToplaySaveBridge=6
+        self.IndToplayMakeConnection=7
+        self.IndToplayFormBridge=8
+        self.IndToplayBlockOppoBridge=9
+        self.IndToplayBlockOppoFormBridge=10
+        self.IndToPlayBlockOppoMakeConnection=11
+
+        self.NUMPADDING=1
+
+    def set_position_label_in_batch(self, batchLabels, kth, IntNextMove):
+        batchLabels[kth]=IntNextMove
+
+    '''A square board the same size as Tensor input, each point is either EMPTY, BLACK or WHITE
+        used to check brige-related pattern,
+        '''
+    def _set_board(self, intState):
+        self._board.fill(HexColor.EMPTY)
+        # set black padding borders
+        for i in range(self.NUMPADDING):
+            self._board[0:INPUT_WIDTH, i] = HexColor.BLACK
+            self._board[0:INPUT_WIDTH, INPUT_WIDTH - 1 - i] = HexColor.BLACK
+        # set white padding borders
+        for j in range(self.NUMPADDING):
+            self._board[j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING] = HexColor.WHITE
+            self._board[INPUT_WIDTH - 1 - j, self.NUMPADDING:INPUT_WIDTH - self.NUMPADDING] = HexColor.WHITE
+        turn = HexColor.BLACK
+        for intMove in intState:
+            (x, y) = MoveConvertUtil.intMoveToPair(intMove)
+            x, y = x + self.NUMPADDING, y + self.NUMPADDING
+            self._board[x, y] = turn
+            turn = HexColor.EMPTY - turn
+            # B[c3]=> c3 => ('c-'a')*boardsize+(3-1) , W[a11]=> a11
+
+    def makeTensorInBatch(self, batchPositionTensors, batchLabels, kth, intState, intNextMove):
+        self.set_position_label_in_batch(batchLabels, kth, intNextMove)
+        self.set_position_tensors_in_batch(batchPositionTensors, kth, intState)
+
+    def set_position_tensors_in_batch(self, batchPositionTensors, kth, intState):
+        pass
+
+
+
 class RLTensorUtil13x13:
     def __init__(self):
         self._board = np.ndarray(dtype=np.int32, shape=(INPUT_WIDTH, INPUT_WIDTH))
